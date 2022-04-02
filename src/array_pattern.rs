@@ -8,15 +8,19 @@ pub enum MatchError {
 }
 
 macro_rules! pred {
-    ($matcher_name:ident<$life:lifetime> : $t:ty = |$item:ident| $predicate:expr) => {
-        fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $t)> + Clone)) -> Result<$t, MatchError> {
+    ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = |$item:ident| $predicate:expr => $b:block) => {
+        fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $t_in)> + Clone)) -> Result<$t_out, MatchError> {
 
             let mut rp = input.clone();
 
-            let p = |$item:$t| $predicate;
+            let p = |$item:$t_in| $predicate;
             
             match input.next() {
-                Some((i, c)) if p(c) => Ok(c),
+                Some((_, c)) if p(c) => {
+                    let $item = c;
+                    let ret = $b;
+                    Ok(ret)
+                },
                 Some((i, _)) => { 
                     std::mem::swap(&mut rp, input);
                     Err(MatchError::Error(i))
@@ -28,8 +32,14 @@ macro_rules! pred {
             } 
         }
     };
+    ($matcher_name:ident : $t_in:ty => $t_out:ty = |$item:ident| $predicate:expr => $b:block) => {
+        pred!($matcher_name<'a> : $t_in => $t_out = |$item| $predicate => $b);
+    };
+    ($matcher_name:ident<$life:lifetime> : $t:ty = |$item:ident| $predicate:expr) => {
+        pred!($matcher_name<$life> : $t => $t = |$item| $predicate => { $item });
+    };
     ($matcher_name:ident : $t:ty = |$item:ident| $predicate:expr) => {
-        pred!($matcher_name<'a> : $t = |$item| $predicate);
+        pred!($matcher_name<'a> : $t => $t = |$item| $predicate => { $item });
     };
 }
 
@@ -216,6 +226,39 @@ mod test {
         let o = even(&mut i)?;
 
         assert_eq!( o.0, 2 );
+
+        Ok(())
+    }
+
+    #[test]
+    fn pred_should_handle_output_block() -> Result<(), MatchError> {
+        struct Output(u8);
+
+        pred!(even : u8 => Output = |x| x % 2 == 0 => { Output(x + 1) });
+
+        let v : Vec<u8> = vec![2, 3];
+        let mut i = v.into_iter().enumerate();
+
+        let o = even(&mut i)?;
+
+        assert_eq!( o.0, 3 );
+
+        Ok(())
+    }
+
+    #[test]
+    fn pred_should_handle_output_block_with_lifetime() -> Result<(), MatchError> {
+        struct Input(u8);
+        struct Output<'a>(&'a Input);
+
+        pred!(even<'a> : &'a Input => Output<'a> = |x| x.0 % 2 == 0 => { Output(x) });
+
+        let v : Vec<Input> = vec![Input(2), Input(3)];
+        let mut i = v.iter().enumerate();
+
+        let o = even(&mut i)?;
+
+        assert_eq!( o.0.0, 2 );
 
         Ok(())
     }
