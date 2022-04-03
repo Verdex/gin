@@ -7,6 +7,23 @@ pub enum MatchError {
     FatalEndOfFile,
 }
 
+macro_rules! group { 
+    ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = |$input:ident| $b:block) => {
+        fn $matcher_name<$life>($input : &mut (impl Iterator<Item = (usize, $t_in)> + Clone)) -> Result<Success<$t_out>, MatchError> {
+            $b
+        }
+    };
+    ($matcher_name:ident<$life:lifetime> : $t:ty = |$input:ident| $b:block) => {
+        group!($matcher_name<$life>: $t => $t = |$input| $b);
+    };
+    ($matcher_name:ident: $t:ty = |$input:ident| $b:block) => {
+        group!($matcher_name<'a>: $t => $t = |$input| $b);
+    };
+    ($matcher_name:ident: $t_in:ty => $t_out:ty = |$input:ident| $b:block) => {
+        group!($matcher_name<'a>: $t_in => $t_out = |$input| $b);
+    };
+}
+
 macro_rules! pred {
     ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = |$item:ident| $predicate:expr => $b:block) => {
         fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $t_in)> + Clone)) -> Result<$t_out, MatchError> {
