@@ -238,6 +238,91 @@ mod test {
     use super::*;
 
     #[test]
+    fn alt_should_match() -> Result<(), MatchError> {
+        pred!(even : u8 = |x| x % 2 == 0);
+        pred!(odd : u8 = |x| x % 2 == 1);
+        alt!(even_or_odd : u8 = even | odd);
+
+        let v : Vec<u8> = vec![3, 3];
+        let mut i = v.into_iter().enumerate();
+
+        let o = even_or_odd(&mut i)?;
+
+        assert_eq!( o, 3 );
+
+        Ok(())
+    }
+
+    #[test]
+    fn alt_should_not_match() {
+        pred!(even : u8 = |x| x % 2 == 0);
+        pred!(five : u8 = |x| x == 5);
+        alt!(even_or_five : u8 = even | five);
+
+        let v : Vec<u8> = vec![3, 3];
+        let mut i = v.into_iter().enumerate();
+
+        let o = even_or_five(&mut i);
+
+        assert!( matches!(o, Err(MatchError::Error(_))) );
+    }
+
+    #[test]
+    fn alt_should_handle_lifetime() -> Result<(), MatchError> {
+        struct Input(u8);
+        
+        pred!(even<'a> : &'a Input = |x| x.0 % 2 == 0);
+        pred!(odd<'a> : &'a Input = |x| x.0 % 2 == 1);
+        alt!(even_or_odd<'a> : &'a Input = even | odd);
+
+        let v : Vec<Input> = vec![Input(3), Input(3)];
+        let mut i = v.iter().enumerate();
+
+        let o = even_or_odd(&mut i)?;
+
+        assert_eq!( o.0, 3 );
+
+        Ok(())
+    }
+
+    #[test]
+    fn alt_should_handle_different_output_type() -> Result<(), MatchError> {
+        struct Output(u8);
+        
+        pred!(even : u8 => Output = |x| x % 2 == 0 => { Output(x) });
+        pred!(odd : u8 => Output = |x| x % 2 == 1 => { Output(x) });
+        alt!(even_or_odd : u8 => Output = even | odd);
+
+        let v : Vec<u8> = vec![3, 3];
+        let mut i = v.into_iter().enumerate();
+
+        let o = even_or_odd(&mut i)?;
+
+        assert_eq!( o.0, 3 );
+
+        Ok(())
+    }
+    
+    #[test]
+    fn alt_should_handle_different_output_type_with_lifetime() -> Result<(), MatchError> {
+        struct Input(u8);
+        struct Output<'a>(&'a Input);
+        
+        pred!(even<'a> : &'a Input => Output<'a> = |x| x.0 % 2 == 0 => { Output(x) });
+        pred!(odd<'a> : &'a Input => Output<'a> = |x| x.0 % 2 == 1 => { Output(x) });
+        alt!(even_or_odd<'a> : &'a Input => Output<'a> = even | odd);
+
+        let v : Vec<Input> = vec![Input(3), Input(3)];
+        let mut i = v.iter().enumerate();
+
+        let o = even_or_odd(&mut i)?;
+
+        assert_eq!( o.0.0, 3 );
+
+        Ok(())
+    }
+
+    #[test]
     fn pred_should_match() -> Result<(), MatchError> {
         pred!(even : u8 = |x| x % 2 == 0);
 
