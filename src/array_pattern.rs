@@ -7,6 +7,38 @@ pub enum MatchError {
     FatalEndOfFile,
 }
 
+macro_rules! alt {
+
+    ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = $($m:ident)|+) => {
+        fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $t_in)> + Clone)) -> Result<$t_out, MatchError> {
+
+            let mut _error : Option<MatchError> = None;
+
+            $(
+                match $m(input) {
+                    Ok(v) => { return Ok(v); },
+                    e @ Err(MatchError::Fatal(_)) => { return e; },
+                    e @ Err(MatchError::FatalEndOfFile) => { return e; },
+                    Err(e @ MatchError::Error(_)) => { _error = Some(e); },
+                    Err(e @ MatchError::ErrorEndOfFile) => { _error = Some(e); },
+                }
+
+            )*
+        
+            Err(_error.unwrap())
+        }
+    };
+    ($matcher_name:ident<$life:lifetime> : $t:ty = $($m:ident)|+) => {
+        alt!($matcher_name<$life> : $t => $t = $($m)|+);
+    };
+    ($matcher_name:ident : $t:ty = $($m:ident)|+) => {
+        alt!($matcher_name<'a> : $t => $t = $($m)|+);
+    };
+    ($matcher_name:ident : $t_in:ty => $t_out:ty = $($m:ident)|+) => {
+        alt!($matcher_name<'a> : $t_in => $t_out = $($m)|+);
+    };
+}
+
 macro_rules! group { 
     ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = |$input:ident| $b:block) => {
         fn $matcher_name<$life>($input : &mut (impl Iterator<Item = (usize, $t_in)> + Clone)) -> Result<$t_out, MatchError> {
