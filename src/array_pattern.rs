@@ -8,14 +8,18 @@ pub enum MatchError {
 }
 
 macro_rules! alt {
-    ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = $($m:ident)|+) => {
+    ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = $($m:ident)|+ => |$name:ident| $b:block) => {
         fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $t_in)> + Clone)) -> Result<$t_out, MatchError> {
 
             let mut _error : Option<MatchError> = None;
 
             $(
                 match $m(input) {
-                    Ok(v) => { return Ok(v); },
+                    Ok(v) => { 
+                        let $name = v;
+                        let ret = $b;
+                        return Ok(ret); 
+                    },
                     e @ Err(MatchError::Fatal(_)) => { return e; },
                     e @ Err(MatchError::FatalEndOfFile) => { return e; },
                     Err(e @ MatchError::Error(_)) => { _error = Some(e); },
@@ -27,14 +31,26 @@ macro_rules! alt {
             Err(_error.unwrap())
         }
     };
+    ($matcher_name:ident<$life:lifetime> : $t:ty = $($m:ident)|+ => |$name:ident| $b:block) => {
+        alt!($matcher_name<$life> : $t => $t = $($m)|+ => |$name| $b);
+    };
+    ($matcher_name:ident : $t:ty = $($m:ident)|+ => |$name:ident| $b:block) => {
+        alt!($matcher_name<'a> : $t => $t = $($m)|+ => |$name| $b);
+    };
+    ($matcher_name:ident : $t_in:ty => $t_out:ty = $($m:ident)|+ => |$name:ident| $b:block) => {
+        alt!($matcher_name<'a> : $t_in => $t_out = $($m)|+ => |$name| $b);
+    };
+    ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = $($m:ident)|+) => {
+        alt!($matcher_name<$life> : $t_in => $t_out = $($m)|+ => |x| { x });
+    };
     ($matcher_name:ident<$life:lifetime> : $t:ty = $($m:ident)|+) => {
-        alt!($matcher_name<$life> : $t => $t = $($m)|+);
+        alt!($matcher_name<$life> : $t => $t = $($m)|+ => |x| { x });
     };
     ($matcher_name:ident : $t:ty = $($m:ident)|+) => {
-        alt!($matcher_name<'a> : $t => $t = $($m)|+);
+        alt!($matcher_name<'a> : $t => $t = $($m)|+ => |x| { x });
     };
     ($matcher_name:ident : $t_in:ty => $t_out:ty = $($m:ident)|+) => {
-        alt!($matcher_name<'a> : $t_in => $t_out = $($m)|+);
+        alt!($matcher_name<'a> : $t_in => $t_out = $($m)|+ => |x| { x });
     };
 }
 
