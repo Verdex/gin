@@ -108,6 +108,27 @@ macro_rules! pred {
 }
 
 macro_rules! seq {
+
+}
+
+macro_rules! main { 
+    ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = $m:ident) => {
+        fn $matcher_name<$life>(input : &mut (impl Iterator<Item = $t_in> + Clone)) -> Result<$t_out, MatchError> {
+            $m(input.enumerate())
+        }
+    };
+    ($matcher_name:ident : $t_in:ty => $t_out:ty = $m:ident) => {
+        main!($matcher_name<'a> : $t_in => $t_out = $m);
+    };
+    ($matcher_name:ident : $t:ty = $m:ident) => {
+        main!($matcher_name<'a> : $t => $t = $m);
+    };
+    ($matcher_name:ident<$life:lifetime> : $t:ty = $m:ident) => {
+        main!($matcher_name<$life> : $t => $t = $m);
+    };
+}
+
+/*macro_rules! seq {
     (err, $rp:ident, $input:ident, $start:ident, $end:ident, $n:ident <= $matcher:ident, $($rest:tt)*) => {
         let v = $matcher($input)?;
         let $n = v.item;
@@ -246,7 +267,7 @@ macro_rules! seq {
             }
         }
     };
-}
+}*/
 
 #[cfg(test)]
 mod test { 
