@@ -107,26 +107,32 @@ macro_rules! pred {
     };
 }
 
+macro_rules! cases {
+    // ident <= pat + 
+    // ident <= ident +
+    // fatal .
+    // ident <= zero or more .
+    // ident <= maybe .
+    // no ident only after <=
+    // lifetime
+    // single type
+    // block (always block)
+
+    ($input:ident, $($n:ident <= $matcher:ident),+) => {
+        return Err(MatchError::Error(0));
+    };
+}
+
 macro_rules! seq {
 
-}
 
-macro_rules! main { 
-    ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = $m:ident) => {
-        fn $matcher_name<$life>(input : &mut (impl Iterator<Item = $t_in> + Clone)) -> Result<$t_out, MatchError> {
-            $m(input.enumerate())
+    ($matcher_name:ident<$life:lifetime> : $in_t:ty => $out_t:ty = $($rest:tt)*) => {
+        fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $in_t)> + Clone)) -> Result<$out_t, MatchError> {
+            cases!(input, $($rest)*);
         }
     };
-    ($matcher_name:ident : $t_in:ty => $t_out:ty = $m:ident) => {
-        main!($matcher_name<'a> : $t_in => $t_out = $m);
-    };
-    ($matcher_name:ident : $t:ty = $m:ident) => {
-        main!($matcher_name<'a> : $t => $t = $m);
-    };
-    ($matcher_name:ident<$life:lifetime> : $t:ty = $m:ident) => {
-        main!($matcher_name<$life> : $t => $t = $m);
-    };
 }
+
 
 /*macro_rules! seq {
     (err, $rp:ident, $input:ident, $start:ident, $end:ident, $n:ident <= $matcher:ident, $($rest:tt)*) => {
@@ -272,6 +278,12 @@ macro_rules! main {
 #[cfg(test)]
 mod test { 
     use super::*;
+
+    #[test]
+    fn blarg() {
+        pred!(other : u8 = |x| x % 2 == 0);
+        seq!(blah<'a> : u8 => u8 = x <= other);
+    }
 
     #[test]
     fn alt_should_handle_block() -> Result<(), MatchError> {
