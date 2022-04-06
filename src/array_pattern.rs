@@ -108,23 +108,33 @@ macro_rules! pred {
 }
 
 macro_rules! cases {
-    // ident <= pat + 
-    // ident <= ident +
     // fatal .
     // ident <= zero or more .
     // ident <= maybe .
-    // no ident only after <=
-    // lifetime
-    // single type
-    // block (always block)
 
-    ($input:ident, $($n:ident <= $matcher:ident),+) => {
+    ($input:ident, $n:ident <= $p:pat $($rest:tt)*) => {
         return Err(MatchError::Error(0));
+    };
+
+    // ident <= pat
+    ($input:ident, $n:ident <= $p:pat $($rest:tt)*) => {
+        return Err(MatchError::Error(0));
+    };
+
+    // ident <= ident 
+    ($input:ident, $n:ident <= $matcher:ident $($rest:tt)*) => {
+        return Err(MatchError::Error(0));
+    };
+
+    ($input:ident => $b:block) => {
+        return $b;
     };
 }
 
 macro_rules! seq {
 
+    // lifetime
+    // single type
 
     ($matcher_name:ident<$life:lifetime> : $in_t:ty => $out_t:ty = $($rest:tt)*) => {
         fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $in_t)> + Clone)) -> Result<$out_t, MatchError> {
