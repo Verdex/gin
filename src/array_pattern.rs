@@ -108,26 +108,78 @@ macro_rules! pred {
 }
 
 macro_rules! cases {
-    // fatal .
-    // ident <= zero or more .
-    // ident <= maybe .
-
-    ($input:ident, $n:ident <= $p:pat $($rest:tt)*) => {
-        return Err(MatchError::Error(0));
-    };
+    // fatal
 
     // ident <= pat
-    ($input:ident, $n:ident <= $p:pat $($rest:tt)*) => {
+    ($input:ident, $rp:ident, $n:ident <= $p:pat, $($rest:tt)*) => {
+        #[allow(unreachable_patterns)]
+        let $n = match $input.next() {
+            Some((_, item @ $p)) => {
+                item
+            },
+            Some((i, _)) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::Error(i)); 
+            },
+            _ => { 
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::ErrorEndOfFile); 
+            },
+        };
+        cases!($input, $rp, $($rest)*);
+    };
+    ($input:ident, $rp:ident, $n:ident <= ? $p:pat, $($rest:tt)*) => {
+        let mut matcher = || { cases!($input, $rp, ) };
+        let result = matcher();
+        let $n = match result {
+            Ok(Success{ item, start, end }) => Ok(Some(item)),
+            Err(MatchError::Error(i)) => Ok(None),
+            Err(MatchError::ErrorEndOfFile) => Ok(None),
+            Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
+            Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+        };
+        cases!($input, $rp, $($rest)*);
+    };
+    ($input:ident, $rp:ident, $n:ident <= * $p:pat, $($rest:tt)*) => {
         return Err(MatchError::Error(0));
     };
 
     // ident <= ident 
-    ($input:ident, $n:ident <= $matcher:ident $($rest:tt)*) => {
+    ($input:ident, $rp:ident, $n:ident <= $matcher:ident, $($rest:tt)*) => {
+        //let $n = $matcher($input)?;
+        return Err(MatchError::Error(0));
+    };
+    ($input:ident, $rp:ident, $n:ident <= ? $matcher:ident, $($rest:tt)*) => {
+        return Err(MatchError::Error(0));
+    };
+    ($input:ident, $rp:ident, $n:ident <= * $matcher:ident, $($rest:tt)*) => {
         return Err(MatchError::Error(0));
     };
 
-    ($input:ident => $b:block) => {
-        return $b;
+    // ident
+    ($input:ident, $rp:ident, $matcher:ident, $($rest:tt)*) => {
+        cases!($input, $rp, _ <= $matcher, $($rest)*);
+    };
+    ($input:ident, $rp:ident, ? $matcher:ident, $($rest:tt)*) => {
+        cases!($input, $rp, _ <= ? $matcher, $($rest)*);
+    };
+    ($input:ident, $rp:ident, * $matcher:ident, $($rest:tt)*) => {
+        cases!($input, $rp, _ <= * $matcher, $($rest)*);
+    };
+    
+    // pat
+    ($input:ident, $rp:ident, $p:pat, $($rest:tt)*) => {
+        cases!($input, $rp, _ <= $p, $($rest)*);
+    };
+    ($input:ident, $rp:ident, ? $p:pat, $($rest:tt)*) => {
+        cases!($input, $rp, _ <= ? $p, $($rest)*);
+    };
+    ($input:ident, $rp:ident, * $p:pat, $($rest:tt)*) => {
+        cases!($input, $rp, _ <= * $p, $($rest)*);
+    };
+
+    ($input:ident, $rp:ident, $b:block) => {
+        return Ok($b);
     };
 }
 
@@ -138,7 +190,8 @@ macro_rules! seq {
 
     ($matcher_name:ident<$life:lifetime> : $in_t:ty => $out_t:ty = $($rest:tt)*) => {
         fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $in_t)> + Clone)) -> Result<$out_t, MatchError> {
-            cases!(input, $($rest)*);
+            let mut _rp = input.clone();
+            cases!(input, _rp, $($rest)*);
         }
     };
 }
@@ -292,7 +345,7 @@ mod test {
     #[test]
     fn blarg() {
         pred!(other : u8 = |x| x % 2 == 0);
-        seq!(blah<'a> : u8 => u8 = x <= other);
+        seq!(blah<'a> : u8 => u8 = x <= other, { x });
     }
 
     #[test]
