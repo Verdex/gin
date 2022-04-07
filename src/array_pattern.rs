@@ -129,14 +129,16 @@ macro_rules! cases {
         cases!($input, $rp, $($rest)*);
     };
     ($input:ident, $rp:ident, $n:ident <= ? $p:pat, $($rest:tt)*) => {
-        let mut matcher = || { cases!($input, $rp, ) };
-        let result = matcher();
-        let $n = match result {
-            Ok(Success{ item, start, end }) => Ok(Some(item)),
-            Err(MatchError::Error(i)) => Ok(None),
-            Err(MatchError::ErrorEndOfFile) => Ok(None),
-            Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
-            Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+        #[allow(unreachable_patterns)]
+        let mut peek = input.clone();
+        let $n = match $input.next() {
+            Some((_, item @ $p)) => {
+                Some(item)
+            },
+            _ => {
+                std::mem::swap(&mut peak, $input); 
+                None
+            },
         };
         cases!($input, $rp, $($rest)*);
     };
@@ -193,6 +195,10 @@ macro_rules! seq {
             let mut _rp = input.clone();
             cases!(input, _rp, $($rest)*);
         }
+    };
+
+    ($matcher_name:ident : $t:ty = $($rest:tt)*) => {
+        seq!($matcher_name<'a> : $t => $t = $($rest)*);
     };
 }
 
@@ -343,9 +349,17 @@ mod test {
     use super::*;
 
     #[test]
-    fn blarg() {
-        pred!(other : u8 = |x| x % 2 == 0);
-        seq!(blah<'a> : u8 => u8 = x <= other, { x });
+    fn seq_should_handle_named_patterns() -> Result<(), MatchError> {
+        seq!(main: u8 = a <= 0x01, b <= 0x02, { a + b });
+
+        let v : Vec<u8> = vec![0x01, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 3 );
+
+        Ok(())
     }
 
     #[test]
