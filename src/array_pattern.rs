@@ -130,13 +130,13 @@ macro_rules! cases {
     };
     ($input:ident, $rp:ident, $n:ident <= ? $p:pat, $($rest:tt)*) => {
         #[allow(unreachable_patterns)]
-        let mut peek = input.clone();
+        let mut peek = $input.clone();
         let $n = match $input.next() {
             Some((_, item @ $p)) => {
                 Some(item)
             },
             _ => {
-                std::mem::swap(&mut peak, $input); 
+                std::mem::swap(&mut peek, $input); 
                 None
             },
         };
@@ -160,24 +160,24 @@ macro_rules! cases {
 
     // ident
     ($input:ident, $rp:ident, $matcher:ident, $($rest:tt)*) => {
-        cases!($input, $rp, _ <= $matcher, $($rest)*);
+        cases!($input, $rp, _x <= $matcher, $($rest)*);
     };
     ($input:ident, $rp:ident, ? $matcher:ident, $($rest:tt)*) => {
-        cases!($input, $rp, _ <= ? $matcher, $($rest)*);
+        cases!($input, $rp, _x <= ? $matcher, $($rest)*);
     };
     ($input:ident, $rp:ident, * $matcher:ident, $($rest:tt)*) => {
-        cases!($input, $rp, _ <= * $matcher, $($rest)*);
+        cases!($input, $rp, _x <= * $matcher, $($rest)*);
     };
     
     // pat
     ($input:ident, $rp:ident, $p:pat, $($rest:tt)*) => {
-        cases!($input, $rp, _ <= $p, $($rest)*);
+        cases!($input, $rp, _x <= $p, $($rest)*);
     };
     ($input:ident, $rp:ident, ? $p:pat, $($rest:tt)*) => {
-        cases!($input, $rp, _ <= ? $p, $($rest)*);
+        cases!($input, $rp, _x <= ? $p, $($rest)*);
     };
     ($input:ident, $rp:ident, * $p:pat, $($rest:tt)*) => {
-        cases!($input, $rp, _ <= * $p, $($rest)*);
+        cases!($input, $rp, _x <= * $p, $($rest)*);
     };
 
     ($input:ident, $rp:ident, $b:block) => {
@@ -349,6 +349,22 @@ mod test {
     use super::*;
 
     #[test]
+    fn seq_should_handle_multiple_maybe_patterns() -> Result<(), MatchError> {
+        seq!(main: u8 = a <= ? 0x01, b <= ? 0x02, { 
+            a.unwrap() + b.unwrap()
+        });
+
+        let v : Vec<u8> = vec![0x01, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 3 );
+
+        Ok(())
+    }
+
+    #[test]
     fn seq_should_handle_named_patterns() -> Result<(), MatchError> {
         seq!(main: u8 = a <= 0x01, b <= 0x02, { a + b });
 
@@ -358,6 +374,48 @@ mod test {
         let o = main(&mut i)?;
 
         assert_eq!( o, 3 );
+
+        Ok(())
+    }
+
+    #[test]
+    fn seq_should_handle_maybe_named_patterns_thats_present() -> Result<(), MatchError> {
+        seq!(main: u8 = _a <= ? 0x01, b <= _, { b });
+
+        let v : Vec<u8> = vec![0xFF, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 0xFF );
+
+        Ok(())
+    }
+
+    #[test]
+    fn seq_should_handle_anon_patterns() -> Result<(), MatchError> {
+        seq!(main: u8 = 0x01, 0x02, { 0xFF });
+
+        let v : Vec<u8> = vec![0x01, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 0xFF );
+
+        Ok(())
+    }
+
+    #[test]
+    fn seq_should_handle_maybe_anon_patterns_thats_present() -> Result<(), MatchError> {
+        seq!(main: u8 = ? 0x01, _, { 0xEE });
+
+        let v : Vec<u8> = vec![0xFF, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 0xEE );
 
         Ok(())
     }
