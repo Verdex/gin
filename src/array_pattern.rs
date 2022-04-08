@@ -143,7 +143,22 @@ macro_rules! cases {
         cases!($input, $rp, $($rest)*);
     };
     ($input:ident, $rp:ident, $n:ident <= * $p:pat, $($rest:tt)*) => {
-        return Err(MatchError::Error(0));
+        #[allow(unreachable_patterns)]
+        let mut ret = vec![];
+        loop {
+            let mut peek = $input.clone();
+            match $input.next() {
+                Some((_, item @ $p)) => {
+                    ret.push(item);
+                },
+                _ => {
+                    std::mem::swap(&mut peek, $input); 
+                    break;
+                },
+            }
+        }
+        let $n = ret;
+        cases!($input, $rp, $($rest)*);
     };
 
     // ident <= ident 
@@ -348,6 +363,39 @@ macro_rules! seq {
 mod test { 
     use super::*;
 
+    #[test]
+    fn seq_should_handle_zero_or_more_anon_pattern() -> Result<(), MatchError> {
+        seq!(main: u8 = * 0x01, * 0x03, * 0x02, { 0xFF });
+
+        let v : Vec<u8> = vec![0x01, 0x01, 0x01, 0x02, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 0xFF );
+        assert!( matches!( i.next(), None ));
+
+        Ok(())
+    }
+
+    #[test]
+    fn seq_should_handle_zero_or_more_named_pattern() -> Result<(), MatchError> {
+        seq!(main: u8 = a <= * 0x01, b <= * 0x03, c <= * 0x02, {
+            let x = a.into_iter().fold(0, |acc, v| acc + v);
+            let y = b.into_iter().fold(x, |acc, v| acc + v);
+            c.into_iter().fold(y, |acc, v| acc + v)
+        });
+
+        let v : Vec<u8> = vec![0x01, 0x01, 0x01, 0x02, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 7 );
+
+        Ok(())
+    }
+    
     #[test]
     fn seq_should_handle_multiple_maybe_patterns() -> Result<(), MatchError> {
         seq!(main: u8 = a <= ? 0x01, b <= ? 0x02, { 
