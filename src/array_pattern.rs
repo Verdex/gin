@@ -164,9 +164,18 @@ macro_rules! cases {
     // ident <= ident 
     ($input:ident, $rp:ident, $n:ident <= $matcher:ident, $($rest:tt)*) => {
         let $n = $matcher($input)?;
+        cases!($input, $rp, $($rest)*);
     };
     ($input:ident, $rp:ident, $n:ident <= ? $matcher:ident, $($rest:tt)*) => {
-        return Err(MatchError::Error(0));
+        #[allow(unreachable_patterns)]
+        let $n = match $matcher($input) {
+            Ok(v) => Some(v),
+            Err(MatchError::Error(_)) => None,
+            Err(MatchError::ErrorEndOfFile) => None, 
+            Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
+            Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+        };
+        cases!($input, $rp, $($rest)*);
     };
     ($input:ident, $rp:ident, $n:ident <= * $matcher:ident, $($rest:tt)*) => {
         return Err(MatchError::Error(0));
@@ -379,9 +388,39 @@ mod test {
     }
 
     #[test]
+    fn seq_should_handle_maybe_named_call() -> Result<(), MatchError> {
+        seq!(item: u8 = a <= _, { a });
+        seq!(main: u8 = a <= ? item, b <= ? item, { a.unwrap() + b.unwrap() });
+
+        let v : Vec<u8> = vec![0x01, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 3 );
+
+        Ok(())
+    }
+
+    #[test]
     fn seq_should_handle_anon_call() -> Result<(), MatchError> {
         seq!(item: u8 = a <= 0xFF, { a });
         seq!(main: u8 = item, item, { 0xFF });
+
+        let v : Vec<u8> = vec![0xFF, 0xFF];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 0xFF );
+
+        Ok(())
+    }
+
+    #[test]
+    fn seq_should_handle_maybe_anon_call() -> Result<(), MatchError> {
+        seq!(item: u8 = a <= 0xFF, { a });
+        seq!(main: u8 = ? item, ? item, { 0xFF });
 
         let v : Vec<u8> = vec![0xFF, 0xFF];
         let mut i = v.into_iter().enumerate();
