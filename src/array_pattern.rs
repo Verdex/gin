@@ -163,8 +163,7 @@ macro_rules! cases {
 
     // ident <= ident 
     ($input:ident, $rp:ident, $n:ident <= $matcher:ident, $($rest:tt)*) => {
-        //let $n = $matcher($input)?;
-        return Err(MatchError::Error(0));
+        let $n = $matcher($input)?;
     };
     ($input:ident, $rp:ident, $n:ident <= ? $matcher:ident, $($rest:tt)*) => {
         return Err(MatchError::Error(0));
@@ -206,6 +205,7 @@ macro_rules! seq {
     // single type
 
     ($matcher_name:ident<$life:lifetime> : $in_t:ty => $out_t:ty = $($rest:tt)*) => {
+        #[allow(dead_code)]
         fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $in_t)> + Clone)) -> Result<$out_t, MatchError> {
             let mut _rp = input.clone();
             cases!(input, _rp, $($rest)*);
@@ -362,6 +362,36 @@ macro_rules! seq {
 #[cfg(test)]
 mod test { 
     use super::*;
+
+    #[test]
+    fn seq_should_handle_named_call() -> Result<(), MatchError> {
+        seq!(item: u8 = a <= _, { a });
+        seq!(main: u8 = a <= item, b <= item, { a + b });
+
+        let v : Vec<u8> = vec![0x01, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 3 );
+
+        Ok(())
+    }
+
+    #[test]
+    fn seq_should_handle_anon_call() -> Result<(), MatchError> {
+        seq!(item: u8 = a <= 0xFF, { a });
+        seq!(main: u8 = item, item, { 0xFF });
+
+        let v : Vec<u8> = vec![0xFF, 0xFF];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 0xFF );
+
+        Ok(())
+    }
 
     #[test]
     fn seq_should_handle_zero_or_more_anon_pattern() -> Result<(), MatchError> {
