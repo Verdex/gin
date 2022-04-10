@@ -474,6 +474,24 @@ mod test {
     }
 
     #[test]
+    fn seq_should_handle_zero_or_more_anon_call() -> Result<(), MatchError> {
+        seq!(one: u8 = a <= 0x01, { a });
+        seq!(two: u8 = a <= 0x02, { a });
+        seq!(three: u8 = a <= 0x03, { a });
+        seq!(main: u8 = * one, * two, * three, { 0xFF });
+
+        let v : Vec<u8> = vec![0x01, 0x01, 0x01, 0x02, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 0xFF );
+
+        Ok(())
+    }
+
+
+    #[test]
     fn seq_should_handle_zero_or_more_anon_pattern() -> Result<(), MatchError> {
         seq!(main: u8 = * 0x01, * 0x03, * 0x02, { 0xFF });
 
