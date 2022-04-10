@@ -129,8 +129,8 @@ macro_rules! cases {
         cases!($input, $rp, $($rest)*);
     };
     ($input:ident, $rp:ident, $n:ident <= ? $p:pat, $($rest:tt)*) => {
-        #[allow(unreachable_patterns)]
         let mut peek = $input.clone();
+        #[allow(unreachable_patterns)]
         let $n = match $input.next() {
             Some((_, item @ $p)) => {
                 Some(item)
@@ -143,8 +143,8 @@ macro_rules! cases {
         cases!($input, $rp, $($rest)*);
     };
     ($input:ident, $rp:ident, $n:ident <= * $p:pat, $($rest:tt)*) => {
-        #[allow(unreachable_patterns)]
         let mut ret = vec![];
+        #[allow(unreachable_patterns)]
         loop {
             let mut peek = $input.clone();
             match $input.next() {
