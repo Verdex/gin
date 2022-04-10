@@ -144,9 +144,9 @@ macro_rules! cases {
     };
     ($input:ident, $rp:ident, $n:ident <= * $p:pat, $($rest:tt)*) => {
         let mut ret = vec![];
-        #[allow(unreachable_patterns)]
         loop {
             let mut peek = $input.clone();
+            #[allow(unreachable_patterns)]
             match $input.next() {
                 Some((_, item @ $p)) => {
                     ret.push(item);
@@ -178,7 +178,27 @@ macro_rules! cases {
         cases!($input, $rp, $($rest)*);
     };
     ($input:ident, $rp:ident, $n:ident <= * $matcher:ident, $($rest:tt)*) => {
-        return Err(MatchError::Error(0));
+        let mut ret = vec![];
+        loop {
+            let mut peek = $input.clone();
+            #[allow(unreachable_patterns)]
+            match $matcher($input) {
+                Ok(v) => ret.push(v),
+                Err(MatchError::Error(_)) => {
+                    std::mem::swap(&mut peek, $input); 
+                    break;
+                },
+                Err(MatchError::ErrorEndOfFile) => {
+                    std::mem::swap(&mut peek, $input); 
+                    break;
+                },
+                Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
+                Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+            }
+
+        }
+        let $n = ret;
+        cases!($input, $rp, $($rest)*);
     };
 
     // ident
@@ -398,6 +418,27 @@ mod test {
         let o = main(&mut i)?;
 
         assert_eq!( o, 3 );
+
+        Ok(())
+    }
+
+    #[test]
+    fn seq_should_handle_zero_or_more_named_call() -> Result<(), MatchError> {
+        seq!(one: u8 = a <= 0x01, { a });
+        seq!(two: u8 = a <= 0x02, { a });
+        seq!(three: u8 = a <= 0x03, { a });
+        seq!(main: u8 = a <= * one, b <= * two, c <= * three, {
+            let x = a.into_iter().fold(0, |acc, v| acc + v);
+            let y = b.into_iter().fold(x, |acc, v| acc + v);
+            c.into_iter().fold(y, |acc, v| acc + v)
+        });
+
+        let v : Vec<u8> = vec![0x01, 0x01, 0x01, 0x02, 0x02];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 7 );
 
         Ok(())
     }
