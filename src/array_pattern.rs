@@ -108,6 +108,71 @@ macro_rules! pred {
 }
 
 macro_rules! cases {
+    // ident <= ident 
+    ($input:ident, $rp:ident, $n:ident <= $matcher:ident, $($rest:tt)*) => {
+        let $n = $matcher($input)?;
+        cases!($input, $rp, $($rest)*);
+    };
+    ($input:ident, $rp:ident, $n:ident <= ? $matcher:ident, $($rest:tt)*) => {
+        #[allow(unreachable_patterns)]
+        let $n = match $matcher($input) {
+            Ok(v) => Some(v),
+            Err(MatchError::Error(_)) => None,
+            Err(MatchError::ErrorEndOfFile) => None, 
+            Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
+            Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+        };
+        cases!($input, $rp, $($rest)*);
+    };
+    ($input:ident, $rp:ident, $n:ident <= * $matcher:ident, $($rest:tt)*) => {
+        let mut ret = vec![];
+        loop {
+            let mut peek = $input.clone();
+            #[allow(unreachable_patterns)]
+            match $matcher($input) {
+                Ok(v) => ret.push(v),
+                Err(MatchError::Error(_)) => {
+                    std::mem::swap(&mut peek, $input); 
+                    break;
+                },
+                Err(MatchError::ErrorEndOfFile) => {
+                    std::mem::swap(&mut peek, $input); 
+                    break;
+                },
+                Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
+                Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+            }
+
+        }
+        let $n = ret;
+        cases!($input, $rp, $($rest)*);
+    };
+    ($input:ident, $rp:ident, $n:ident <= ! $matcher:ident, $($rest:tt)*) => {
+        #[allow(unreachable_patterns)]
+        let $n = match $matcher($input) {
+            Ok(v) => v,
+            Err(MatchError::Error(i)) => return Err(MatchError::Fatal(i)),
+            Err(MatchError::ErrorEndOfFile) => return Err(MatchError::FatalEndOfFile), 
+            Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
+            Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+        };
+        cases!($input, $rp, $($rest)*);
+    };
+
+    // ident
+    ($input:ident, $rp:ident, $matcher:ident, $($rest:tt)*) => {
+        cases!($input, $rp, _x <= $matcher, $($rest)*);
+    };
+    ($input:ident, $rp:ident, ? $matcher:ident, $($rest:tt)*) => {
+        cases!($input, $rp, _x <= ? $matcher, $($rest)*);
+    };
+    ($input:ident, $rp:ident, * $matcher:ident, $($rest:tt)*) => {
+        cases!($input, $rp, _x <= * $matcher, $($rest)*);
+    };
+    ($input:ident, $rp:ident, ! $matcher:ident, $($rest:tt)*) => {
+        cases!($input, $rp, _x <= ! $matcher, $($rest)*);
+    };
+
     // ident <= pat
     ($input:ident, $rp:ident, $n:ident <= $p:pat, $($rest:tt)*) => {
         #[allow(unreachable_patterns)]
@@ -175,72 +240,7 @@ macro_rules! cases {
         };
         cases!($input, $rp, $($rest)*);
     };
-
-    // ident <= ident 
-    ($input:ident, $rp:ident, $n:ident <= $matcher:ident, $($rest:tt)*) => {
-        let $n = $matcher($input)?;
-        cases!($input, $rp, $($rest)*);
-    };
-    ($input:ident, $rp:ident, $n:ident <= ? $matcher:ident, $($rest:tt)*) => {
-        #[allow(unreachable_patterns)]
-        let $n = match $matcher($input) {
-            Ok(v) => Some(v),
-            Err(MatchError::Error(_)) => None,
-            Err(MatchError::ErrorEndOfFile) => None, 
-            Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
-            Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
-        };
-        cases!($input, $rp, $($rest)*);
-    };
-    ($input:ident, $rp:ident, $n:ident <= * $matcher:ident, $($rest:tt)*) => {
-        let mut ret = vec![];
-        loop {
-            let mut peek = $input.clone();
-            #[allow(unreachable_patterns)]
-            match $matcher($input) {
-                Ok(v) => ret.push(v),
-                Err(MatchError::Error(_)) => {
-                    std::mem::swap(&mut peek, $input); 
-                    break;
-                },
-                Err(MatchError::ErrorEndOfFile) => {
-                    std::mem::swap(&mut peek, $input); 
-                    break;
-                },
-                Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
-                Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
-            }
-
-        }
-        let $n = ret;
-        cases!($input, $rp, $($rest)*);
-    };
-    ($input:ident, $rp:ident, $n:ident <= ! $matcher:ident, $($rest:tt)*) => {
-        #[allow(unreachable_patterns)]
-        let $n = match $matcher($input) {
-            Ok(v) => v,
-            Err(MatchError::Error(_)) => return Err(MatchError::Fatal(i)),
-            Err(MatchError::ErrorEndOfFile) => return Err(MatchError::FatalEndOfFile), 
-            Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
-            Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
-        };
-        cases!($input, $rp, $($rest)*);
-    };
-
-    // ident
-    ($input:ident, $rp:ident, $matcher:ident, $($rest:tt)*) => {
-        cases!($input, $rp, _x <= $matcher, $($rest)*);
-    };
-    ($input:ident, $rp:ident, ? $matcher:ident, $($rest:tt)*) => {
-        cases!($input, $rp, _x <= ? $matcher, $($rest)*);
-    };
-    ($input:ident, $rp:ident, * $matcher:ident, $($rest:tt)*) => {
-        cases!($input, $rp, _x <= * $matcher, $($rest)*);
-    };
-    ($input:ident, $rp:ident, ! $matcher:ident, $($rest:tt)*) => {
-        cases!($input, $rp, _x <= ! $matcher, $($rest)*);
-    };
-    
+ 
     // pat
     ($input:ident, $rp:ident, $p:pat, $($rest:tt)*) => {
         cases!($input, $rp, _x <= $p, $($rest)*);
@@ -423,6 +423,19 @@ macro_rules! seq {
 #[cfg(test)]
 mod test { 
     use super::*;
+
+    #[test]
+    fn seq_should_handle_fatal_call() {
+        seq!(item: u8 = a <= 0x00, { a });
+        seq!(main: u8 = a <= ! item, { a });
+
+        let v : Vec<u8> = vec![0x01];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i);
+
+        assert!( matches!( o, Err(MatchError::Fatal(_) ) ) );
+    }
 
     #[test]
     fn seq_should_handle_named_call() -> Result<(), MatchError> {
