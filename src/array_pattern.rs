@@ -108,8 +108,6 @@ macro_rules! pred {
 }
 
 macro_rules! cases {
-    // fatal
-
     // ident <= pat
     ($input:ident, $rp:ident, $n:ident <= $p:pat, $($rest:tt)*) => {
         #[allow(unreachable_patterns)]
@@ -160,6 +158,23 @@ macro_rules! cases {
         let $n = ret;
         cases!($input, $rp, $($rest)*);
     };
+    ($input:ident, $rp:ident, $n:ident <= ! $p:pat, $($rest:tt)*) => {
+        #[allow(unreachable_patterns)]
+        let $n = match $input.next() {
+            Some((_, item @ $p)) => {
+                item
+            },
+            Some((i, _)) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::Fatal(i)); 
+            },
+            _ => { 
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::FatalEndOfFile); 
+            },
+        };
+        cases!($input, $rp, $($rest)*);
+    };
 
     // ident <= ident 
     ($input:ident, $rp:ident, $n:ident <= $matcher:ident, $($rest:tt)*) => {
@@ -200,6 +215,17 @@ macro_rules! cases {
         let $n = ret;
         cases!($input, $rp, $($rest)*);
     };
+    ($input:ident, $rp:ident, $n:ident <= ! $matcher:ident, $($rest:tt)*) => {
+        #[allow(unreachable_patterns)]
+        let $n = match $matcher($input) {
+            Ok(v) => v,
+            Err(MatchError::Error(_)) => return Err(MatchError::Fatal(i)),
+            Err(MatchError::ErrorEndOfFile) => return Err(MatchError::FatalEndOfFile), 
+            Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
+            Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+        };
+        cases!($input, $rp, $($rest)*);
+    };
 
     // ident
     ($input:ident, $rp:ident, $matcher:ident, $($rest:tt)*) => {
@@ -211,6 +237,9 @@ macro_rules! cases {
     ($input:ident, $rp:ident, * $matcher:ident, $($rest:tt)*) => {
         cases!($input, $rp, _x <= * $matcher, $($rest)*);
     };
+    ($input:ident, $rp:ident, ! $matcher:ident, $($rest:tt)*) => {
+        cases!($input, $rp, _x <= ! $matcher, $($rest)*);
+    };
     
     // pat
     ($input:ident, $rp:ident, $p:pat, $($rest:tt)*) => {
@@ -221,6 +250,9 @@ macro_rules! cases {
     };
     ($input:ident, $rp:ident, * $p:pat, $($rest:tt)*) => {
         cases!($input, $rp, _x <= * $p, $($rest)*);
+    };
+    ($input:ident, $rp:ident, ! $p:pat, $($rest:tt)*) => {
+        cases!($input, $rp, _x <= ! $p, $($rest)*);
     };
 
     ($input:ident, $rp:ident, $b:block) => {
