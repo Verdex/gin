@@ -271,7 +271,7 @@ macro_rules! seq {
 
     ($matcher_name:ident<$life:lifetime> : $t:ty = $($rest:tt)*) => {
         seq!($matcher_name<$life> : $t => $t = $($rest)*);
-    }
+    };
 
     ($matcher_name:ident : $t:ty = $($rest:tt)*) => {
         seq!($matcher_name<'a> : $t => $t = $($rest)*);
