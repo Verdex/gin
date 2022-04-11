@@ -425,6 +425,43 @@ mod test {
     use super::*;
 
     #[test]
+    fn seq_should_handle_anon_fatal_pattern() {
+        seq!(main: u8 = ! 0x00, { 0xFF });
+
+        let v : Vec<u8> = vec![0x01];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i);
+
+        assert!( matches!( o, Err(MatchError::Fatal(_) ) ) );
+    }
+
+    #[test]
+    fn seq_should_handle_fatal_pattern() {
+        seq!(main: u8 = x <= ! 0x00, { x });
+
+        let v : Vec<u8> = vec![0x01];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i);
+
+        assert!( matches!( o, Err(MatchError::Fatal(_) ) ) );
+    }
+
+    #[test]
+    fn seq_should_handle_anon_fatal_call() {
+        seq!(item: u8 = a <= 0x00, { a });
+        seq!(main: u8 = ! item, { 0xFF });
+
+        let v : Vec<u8> = vec![0x01];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i);
+
+        assert!( matches!( o, Err(MatchError::Fatal(_) ) ) );
+    }
+
+    #[test]
     fn seq_should_handle_fatal_call() {
         seq!(item: u8 = a <= 0x00, { a });
         seq!(main: u8 = a <= ! item, { a });
