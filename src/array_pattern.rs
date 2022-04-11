@@ -261,10 +261,6 @@ macro_rules! cases {
 }
 
 macro_rules! seq {
-
-    // lifetime
-    // single type
-
     ($matcher_name:ident<$life:lifetime> : $in_t:ty => $out_t:ty = $($rest:tt)*) => {
         #[allow(dead_code)]
         fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $in_t)> + Clone)) -> Result<$out_t, MatchError> {
@@ -273,8 +269,16 @@ macro_rules! seq {
         }
     };
 
+    ($matcher_name:ident<$life:lifetime> : $t:ty = $($rest:tt)*) => {
+        seq!($matcher_name<$life> : $t => $t = $($rest)*);
+    }
+
     ($matcher_name:ident : $t:ty = $($rest:tt)*) => {
         seq!($matcher_name<'a> : $t => $t = $($rest)*);
+    };
+
+    ($matcher_name:ident : $in_t:ty => $out_t:ty = $($rest:tt)*) => {
+        seq!($matcher_name<'a> : $in_t => $out_t = $($rest)*);
     };
 }
 
