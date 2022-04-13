@@ -288,24 +288,79 @@ mod test {
 
     #[test]
     fn group_should_match() -> Result<(), MatchError> {
+        group!(main: u8 = |input| {
+            seq!(a: u8 = x <= _, y <= 0x01, { x + y });
+            
+            a(input)
+        });
+
+        let v : Vec<u8> = vec![0x05, 0x01];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o, 0x06 );
 
         Ok(())
     }
 
     #[test]
     fn group_should_handle_lifetime() -> Result<(), MatchError> {
+        struct Input(u8);
+
+        group!(main<'a>: &'a Input = |input| {
+            seq!(a<'a>: &'a Input = _, y <= Input(0x01), { y });
+            
+            a(input)
+        });
+
+        let v : Vec<Input> = vec![Input(0x05), Input(0x01)];
+        let mut i = v.iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o.0, 0x01 );
 
         Ok(())
     }
 
     #[test]
     fn group_should_handle_different_output_type() -> Result<(), MatchError> {
+        struct Output(u8);
+
+        group!(main: u8 => Output = |input| {
+            seq!(a: u8 => Output = x <= _, y <= 0x01, { Output(x + y) });
+            
+            a(input)
+        });
+
+        let v : Vec<u8> = vec![0x05, 0x01];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o.0, 0x06 );
 
         Ok(())
     }
 
     #[test]
     fn group_should_handle_different_output_type_with_lifetime() -> Result<(), MatchError> {
+        struct Input(u8);
+        struct Output<'a>(&'a Input);
+
+        group!(main<'a>: &'a Input => Output<'a> = |input| {
+            seq!(a<'a>: &'a Input => Output<'a> = _, y <= Input(0x01), { Output(y) });
+            
+            a(input)
+        });
+
+        let v : Vec<Input> = vec![Input(0x05), Input(0x01)];
+        let mut i = v.iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o.0.0, 0x01 );
 
         Ok(())
     }
