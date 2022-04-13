@@ -287,6 +287,76 @@ mod test {
     use super::*;
 
     #[test]
+    fn group_should_match() -> Result<(), MatchError> {
+
+        Ok(())
+    }
+
+    #[test]
+    fn group_should_handle_lifetime() -> Result<(), MatchError> {
+
+        Ok(())
+    }
+
+    #[test]
+    fn group_should_handle_different_output_type() -> Result<(), MatchError> {
+
+        Ok(())
+    }
+
+    #[test]
+    fn group_should_handle_different_output_type_with_lifetime() -> Result<(), MatchError> {
+
+        Ok(())
+    }
+
+    #[test]
+    fn seq_should_handle_lifetime() -> Result<(), MatchError> {
+        struct Input(u8);
+
+        seq!(main<'a>: &'a Input = a <= Input(0x00), { a });
+
+        let v : Vec<Input> = vec![Input(0x00)];
+        let mut i = v.iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o.0, 0x00 );
+        Ok(())
+    }
+
+    #[test]
+    fn seq_should_handle_different_output_type() -> Result<(), MatchError> {
+        struct Output(u8);
+
+        seq!(main: u8 => Output = a <= 0x00, { Output(a) });
+
+        let v : Vec<u8> = vec![0x00];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o.0, 0x00 );
+        Ok(())
+    }
+
+    #[test]
+    fn seq_should_handle_different_output_type_with_lifetime() -> Result<(), MatchError> {
+        struct Input(u8);
+        struct Output<'a>(&'a Input);
+
+        seq!(main<'a>: &'a Input => Output<'a> = a <= Input(0x00), { Output(a) });
+
+        let v : Vec<Input> = vec![Input(0x00)];
+        let mut i = v.iter().enumerate();
+
+        let o = main(&mut i)?;
+
+        assert_eq!( o.0.0, 0x00 );
+        Ok(())
+    }
+
+    #[test]
     fn seq_should_handle_anon_fatal_pattern() {
         seq!(main: u8 = ! 0x00, { 0xFF });
 
