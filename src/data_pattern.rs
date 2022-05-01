@@ -53,31 +53,41 @@ fn iter_visit<'a>(input : &'a Tree) -> Vec<&'a Tree> {
     ret
 }
 
+enum Blarg<'a> {
+    Emit(&'a Tree),
+    Pop,
+}
+
 struct Paths<'a> {
+    q : Vec<Blarg<'a>>,
     result : Vec<&'a Tree>,
 }
 
 impl<'a> Paths<'a> {
     fn new(input : &'a Tree) -> Self {
-        Paths{ result : vec![input] }
+        Paths{ result : vec![], q : vec![Blarg::Emit(input)] }
     }
 }
 
 impl<'a> Iterator for Paths<'a> {
     type Item = Vec<&'a Tree>;
     fn next(&mut self) -> Option<Self::Item> {
-        let mut ret = self.result.clone();
-        while self.result.len() != 0 {
-            let t = self.result.pop().unwrap();
+        while self.q.len() != 0 {
+            let t = self.q.pop().unwrap();
             match t {
-                x @ Tree::Leaf(_) => {
+                Blarg::Emit(x @ Tree::Leaf(_)) => {
+                    let mut ret = self.result.clone();
                     ret.push(x);
                     return Some(ret);
                 }, 
-                x @ Tree::Node(y, z) => {
-                    ret.push(x);
-                    self.result.push(z); 
-                    self.result.push(y);
+                Blarg::Emit(x @ Tree::Node(y, z)) => {
+                    self.result.push(x);
+                    self.q.push(Blarg::Pop);
+                    self.q.push(Blarg::Emit(z)); 
+                    self.q.push(Blarg::Emit(y));
+                },
+                Blarg::Pop => {
+                    self.result.pop();
                 },
             }
         }
@@ -102,7 +112,7 @@ mod test {
             )
         );
 
-        let y = visit(&x);
+       /* let y = visit(&x);
         let w = iter_visit(&x);
 
         for ylet in y {
@@ -113,6 +123,17 @@ mod test {
 
         for wlet in w {
             println!("{:?}", wlet);
+        }*/
+
+        let ps = Paths::new(&x);
+
+        println!("====");
+
+        for p in ps {
+            for plet in p {
+                println!("{:?}", plet);
+            }
+            println!("\n\n\n");
         }
     }
 }
