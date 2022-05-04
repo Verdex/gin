@@ -53,19 +53,19 @@ fn iter_visit<'a>(input : &'a Tree) -> Vec<&'a Tree> {
     ret
 }
 
-enum Blarg<'a> {
+enum PathAction<'a> {
     Emit(&'a Tree),
     Pop,
 }
 
 struct Paths<'a> {
-    q : Vec<Blarg<'a>>,
+    q : Vec<PathAction<'a>>,
     result : Vec<&'a Tree>,
 }
 
 impl<'a> Paths<'a> {
     fn new(input : &'a Tree) -> Self {
-        Paths{ result : vec![], q : vec![Blarg::Emit(input)] }
+        Paths{ result : vec![], q : vec![PathAction::Emit(input)] }
     }
 }
 
@@ -75,18 +75,18 @@ impl<'a> Iterator for Paths<'a> {
         while self.q.len() != 0 {
             let t = self.q.pop().unwrap();
             match t {
-                Blarg::Emit(x @ Tree::Leaf(_)) => {
+                PathAction::Emit(x @ Tree::Leaf(_)) => {
                     let mut ret = self.result.clone();
                     ret.push(x);
                     return Some(ret);
                 }, 
-                Blarg::Emit(x @ Tree::Node(y, z)) => {
+                PathAction::Emit(x @ Tree::Node(y, z)) => {
                     self.result.push(x);
-                    self.q.push(Blarg::Pop);
-                    self.q.push(Blarg::Emit(z)); 
-                    self.q.push(Blarg::Emit(y));
+                    self.q.push(PathAction::Pop);
+                    self.q.push(PathAction::Emit(z)); 
+                    self.q.push(PathAction::Emit(y));
                 },
-                Blarg::Pop => {
+                PathAction::Pop => {
                     self.result.pop();
                 },
             }
