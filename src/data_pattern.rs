@@ -53,23 +53,23 @@ fn iter_visit<'a>(input : &'a Tree) -> Vec<&'a Tree> {
     ret
 }
 
-enum PathAction<'a> {
-    Emit(&'a Tree),
+enum PathAction<'a, T> {
+    Emit(&'a T),
     Pop,
 }
 
-struct Paths<'a> {
-    q : Vec<PathAction<'a>>,
-    result : Vec<&'a Tree>,
+struct Paths<'a, T> {
+    q : Vec<PathAction<'a, T>>,
+    result : Vec<&'a T>,
 }
 
-impl<'a> Paths<'a> {
+impl<'a> Paths<'a, Tree> {
     fn new(input : &'a Tree) -> Self {
         Paths{ result : vec![], q : vec![PathAction::Emit(input)] }
     }
 }
 
-impl<'a> Iterator for Paths<'a> {
+impl<'a> Iterator for Paths<'a, Tree> {
     type Item = Vec<&'a Tree>;
     fn next(&mut self) -> Option<Self::Item> {
         while self.q.len() != 0 {
