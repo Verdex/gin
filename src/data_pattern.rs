@@ -95,6 +95,53 @@ impl<'a> Iterator for Paths<'a, Tree> {
     }
 }
 
+/*macro_rules! blarg {
+    () => {
+
+    };
+
+    (node, $($nexts:ident)*, $q:expr, $result:expr, $x:pat, $($w:tt)*) => {
+        PathAction::Emit(out @ $x) => {
+            $result.push(out);
+            $q.push(PathAction::Pop);
+            $(
+                $q.push(PathAction::Emit($nexts)); 
+            )*
+        },
+        blarg!($($w)*)
+    };
+
+    (terminal, $result:expr, $x:pat, $($w:tt)*) => {
+        PathAction::Emit(out @ $x) => {
+            let mut ret = $result.clone();
+            ret.push(out);
+            return Some(ret);
+        }, 
+        blarg!($($w)*)
+    };
+}
+
+macro_rules! path {
+    ($target:ty, $($w:tt)*) => {
+        impl<'a> Iterator for Paths<'a, $target> {
+            type Item = Vec<&'a $target>;
+            fn next(&mut self) -> Option<Self::Item> {
+                while self.q.len() != 0 {
+                    let t = self.q.pop().unwrap();
+                    match t {
+                        blarg!($($w)*)
+                        PathAction::Pop => {
+                            self.result.pop();
+                        },
+                    }
+                }
+                None
+            }
+        }
+    };
+}
+
+path!(Tree, terminal, )*/
 
 #[cfg(test)]
 mod test {
