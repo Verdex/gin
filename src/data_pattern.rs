@@ -60,32 +60,6 @@ impl<'a> Iterator for Paths<'a, Tree> {
     }
 }
 
-/*impl<'a> Iterator for Paths<'a, Tree> {
-    type Item = Vec<&'a Tree>;
-    fn next(&mut self) -> Option<Self::Item> {
-        while self.q.len() != 0 {
-            let t = self.q.pop().unwrap();
-            match t {
-                PathAction::Emit(x @ Tree::Leaf(_)) => {
-                    let mut ret = self.result.clone();
-                    ret.push(x);
-                    return Some(ret);
-                }, 
-                PathAction::Emit(x @ Tree::Node(y, z)) => {
-                    self.result.push(x);
-                    self.q.push(PathAction::Pop);
-                    self.q.push(PathAction::Emit(z)); 
-                    self.q.push(PathAction::Emit(y));
-                },
-                PathAction::Pop => {
-                    self.result.pop();
-                },
-            }
-        }
-        None
-    }
-}*/
-
 #[cfg(test)]
 mod test {
     use super::*;
