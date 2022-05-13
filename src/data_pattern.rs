@@ -14,24 +14,6 @@ enum Tree {
     Leaf(u8),
 }
 
-
-fn visit<'a>(input : &'a Tree) -> Vec<&'a Tree> {
-    fn h<'a>(input : &'a Tree, a : &mut Vec<&'a Tree>) {
-        match input { 
-            x @ Tree::Leaf(_) => a.push(x),
-            x @ Tree::Node(y, z) => {
-                a.push(x);
-                h(y, a);
-                h(z, a);
-            },
-        } 
-
-    }
-    let mut ret = vec![];
-    h(input, &mut ret);
-    ret
-}
-
 fn iter_visit<'a>(input : &'a Tree) -> Vec<&'a Tree> {
     let mut q = vec![];
     let mut ret = vec![];
