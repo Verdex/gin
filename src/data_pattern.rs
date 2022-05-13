@@ -10,17 +10,16 @@ enum PathAction<'a, T> {
     Pop,
 }
 
-struct Paths<'a, T> {
+pub struct Paths<'a, T> {
     q : Vec<PathAction<'a, T>>,
     x : fn(&'a T) -> Echo<'a, T>,
     result : Vec<&'a T>,
 }
 
 pub enum Echo<'a, T> {
-    Terminal(&'a T),
+    Leaf(&'a T),
     Node(&'a T, Vec<&'a T>),
 } 
-
 
 impl<'a, T> Paths<'a, T> {
     fn new(input : &'a T, x : fn(&'a T) -> Echo<'a, T>) -> Self {
@@ -37,7 +36,7 @@ impl<'a> Iterator for Paths<'a, Tree> {
                 PathAction::Emit(x) => {
                     let r = self.x;
                     match r(x) {
-                        Echo::Terminal(w) => {
+                        Echo::Leaf(w) => {
                             let mut ret = self.result.clone();
                             ret.push(w);
                             return Some(ret);
@@ -75,7 +74,7 @@ mod test {
 
     fn blarg<'a>(t : &'a Tree) -> Echo<'a, Tree> {
         match t {
-            x @ Tree::Leaf(_) => Echo::Terminal(x),
+            x @ Tree::Leaf(_) => Echo::Leaf(x),
             x @ Tree::Node(y, z) => Echo::Node(x, vec![z, y]),
         }
     }
