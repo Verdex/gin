@@ -14,27 +14,6 @@ enum Tree {
     Leaf(u8),
 }
 
-fn iter_visit<'a>(input : &'a Tree) -> Vec<&'a Tree> {
-    let mut q = vec![];
-    let mut ret = vec![];
-    q.push(input);
-
-    while q.len() != 0 {
-        let t = q.pop().unwrap();
-        match t {
-            x @ Tree::Leaf(_) => ret.push(x),
-            x @ Tree::Node(y, z) => {
-                ret.push(x);
-                q.push(z); // recursive version calls immediately, but iterative waits until next time through the loop
-                           // at which point we'll have already pushed the other item.  So we want to reverse the order 
-                           // of the push to get the same iteration order.
-                q.push(y);
-            },
-        }
-    }
-    ret
-}
-
 enum PathAction<'a, T> {
     Emit(&'a T),
     Pop,
