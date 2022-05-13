@@ -131,41 +131,4 @@ mod test {
 
         assert!( matches!( paths[2][2], Tree::Leaf(3) ) );
     }
-
-    #[test]
-    fn test_blarg() {
-        let x = Tree::Node(
-            Box::new(Tree::Leaf(1)),
-            Box::new(
-                Tree::Node(
-                    Box::new(Tree::Leaf(2)),
-                    Box::new(Tree::Leaf(3))
-                )
-            )
-        );
-
-       /* let y = visit(&x);
-        let w = iter_visit(&x);
-
-        for ylet in y {
-            println!("{:?}", ylet);
-        }
-
-        println!("\n\n");
-
-        for wlet in w {
-            println!("{:?}", wlet);
-        }*/
-
-        let ps = Paths::new(&x, blarg);
-
-        println!("====");
-
-        for p in ps {
-            for plet in p {
-                println!("{:?}", plet);
-            }
-            println!("\n\n\n");
-        }
-    }
 }
