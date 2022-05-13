@@ -10,16 +10,16 @@ enum PathAction<'a, T> {
     Pop,
 }
 
+pub enum Echo<'a, T> {
+    Leaf(&'a T),
+    Node(&'a T, Vec<&'a T>),
+} 
+
 pub struct Paths<'a, T> {
     q : Vec<PathAction<'a, T>>,
     x : fn(&'a T) -> Echo<'a, T>,
     result : Vec<&'a T>,
 }
-
-pub enum Echo<'a, T> {
-    Leaf(&'a T),
-    Node(&'a T, Vec<&'a T>),
-} 
 
 impl<'a, T> Paths<'a, T> {
     fn new(input : &'a T, x : fn(&'a T) -> Echo<'a, T>) -> Self {
