@@ -63,7 +63,53 @@ struct Paths<'a, T> {
     result : Vec<&'a T>,
 }
 
-impl<'a> Paths<'a, Tree> {
+pub enum Echo<'a, T> {
+    Terminal(&'a T),
+    Node(&'a T, Vec<&'a T>),
+} 
+
+/*trait Pathite<'a> {
+    fn choose(&self) -> Echo<'a, Self>;
+}
+
+impl<'a, T> Paths<'a, T> {
+    fn new(input : &'a T) -> Self {
+        Paths{ result : vec![], q : vec![PathAction::Emit(input)] }
+    }
+}
+
+impl<'a, T> Iterator for Paths<'a, T> {
+    type Item = Vec<&'a T>;
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.q.len() != 0 {
+            let t = self.q.pop().unwrap();
+            match t {
+                PathAction::Emit(x) => {
+                    match x.choose() {
+                        Echo::Terminal(y) => {
+                            let mut ret = self.result.clone();
+                            ret.push(x);
+                            return Some(ret);
+                        },
+                        Echo::Node(y, ys) => {
+                            self.result.push(y);
+                            self.q.push(PathAction::Pop);
+                            for ylet in ys {
+                                self.q.push(PathAction::Emit(ylet)); 
+                            }
+                        },
+                    }
+                },
+                PathAction::Pop => {
+                    self.result.pop();
+                },
+            }
+        }
+        None
+    }
+}*/
+
+/*impl<'a> Paths<'a, Tree> {
     fn new(input : &'a Tree) -> Self {
         Paths{ result : vec![], q : vec![PathAction::Emit(input)] }
     }
@@ -93,7 +139,7 @@ impl<'a> Iterator for Paths<'a, Tree> {
         }
         None
     }
-}
+}*/
 
 /*macro_rules! blarg {
     () => {
