@@ -10,19 +10,19 @@ enum PathAction<'a, T> {
     Pop,
 }
 
-pub enum Echo<'a, T> {
+pub enum ConsType<'a, T> {
     Leaf(&'a T),
     Node(&'a T, Vec<&'a T>),
 } 
 
 pub struct Paths<'a, T> {
     q : Vec<PathAction<'a, T>>,
-    x : fn(&'a T) -> Echo<'a, T>,
+    x : fn(&'a T) -> ConsType<'a, T>,
     result : Vec<&'a T>,
 }
 
 impl<'a, T> Paths<'a, T> {
-    fn new(input : &'a T, x : fn(&'a T) -> Echo<'a, T>) -> Self {
+    fn new(input : &'a T, x : fn(&'a T) -> ConsType<'a, T>) -> Self {
         Paths{ result : vec![], q : vec![PathAction::Emit(input)], x }
     }
 }
@@ -36,12 +36,12 @@ impl<'a> Iterator for Paths<'a, Tree> {
                 PathAction::Emit(x) => {
                     let r = self.x;
                     match r(x) {
-                        Echo::Leaf(w) => {
+                        ConsType::Leaf(w) => {
                             let mut ret = self.result.clone();
                             ret.push(w);
                             return Some(ret);
                         },
-                        Echo::Node(w, ws) => {
+                        ConsType::Node(w, ws) => {
                             self.result.push(w);
                             self.q.push(PathAction::Pop);
                             for wlet in ws {
@@ -72,10 +72,10 @@ mod test {
         };
     }
 
-    fn blarg<'a>(t : &'a Tree) -> Echo<'a, Tree> {
+    fn blarg<'a>(t : &'a Tree) -> ConsType<'a, Tree> {
         match t {
-            x @ Tree::Leaf(_) => Echo::Leaf(x),
-            x @ Tree::Node(y, z) => Echo::Node(x, vec![z, y]),
+            x @ Tree::Leaf(_) => ConsType::Leaf(x),
+            x @ Tree::Node(y, z) => ConsType::Node(x, vec![z, y]),
         }
     }
 
