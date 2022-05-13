@@ -17,13 +17,13 @@ pub enum ConsType<'a, T> {
 
 pub struct Paths<'a, T> {
     q : Vec<PathAction<'a, T>>,
-    x : fn(&'a T) -> ConsType<'a, T>,
+    path_finder : fn(&'a T) -> ConsType<'a, T>,
     result : Vec<&'a T>,
 }
 
 impl<'a, T> Paths<'a, T> {
-    fn new(input : &'a T, x : fn(&'a T) -> ConsType<'a, T>) -> Self {
-        Paths{ result : vec![], q : vec![PathAction::Emit(input)], x }
+    fn new(input : &'a T, path_finder : fn(&'a T) -> ConsType<'a, T>) -> Self {
+        Paths{ result : vec![], q : vec![PathAction::Emit(input)], path_finder }
     }
 }
 
@@ -34,7 +34,7 @@ impl<'a> Iterator for Paths<'a, Tree> {
             let t = self.q.pop().unwrap();
             match t {
                 PathAction::Emit(x) => {
-                    let r = self.x;
+                    let r = self.path_finder;
                     match r(x) {
                         ConsType::Leaf(w) => {
                             let mut ret = self.result.clone();
