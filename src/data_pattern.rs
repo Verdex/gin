@@ -60,6 +60,7 @@ enum PathAction<'a, T> {
 
 struct Paths<'a, T> {
     q : Vec<PathAction<'a, T>>,
+    x : fn(&'a T) -> Echo<'a, T>,
     result : Vec<&'a T>,
 }
 
@@ -68,38 +69,36 @@ pub enum Echo<'a, T> {
     Node(&'a T, Vec<&'a T>),
 } 
 
-/*trait Pathite<'a> {
-    fn choose(&self) -> Echo<'a, Self>;
-}
 
 impl<'a, T> Paths<'a, T> {
-    fn new(input : &'a T) -> Self {
-        Paths{ result : vec![], q : vec![PathAction::Emit(input)] }
+    fn new(input : &'a T, x : fn(&'a T) -> Echo<'a, T>) -> Self {
+        Paths{ result : vec![], q : vec![PathAction::Emit(input)], x }
     }
 }
 
-impl<'a, T> Iterator for Paths<'a, T> {
-    type Item = Vec<&'a T>;
+impl<'a> Iterator for Paths<'a, Tree> {
+    type Item = Vec<&'a Tree>;
     fn next(&mut self) -> Option<Self::Item> {
         while self.q.len() != 0 {
             let t = self.q.pop().unwrap();
             match t {
                 PathAction::Emit(x) => {
-                    match x.choose() {
-                        Echo::Terminal(y) => {
+                    let r = self.x;
+                    match r(x) {
+                        Echo::Terminal(w) => {
                             let mut ret = self.result.clone();
-                            ret.push(x);
+                            ret.push(w);
                             return Some(ret);
                         },
-                        Echo::Node(y, ys) => {
-                            self.result.push(y);
+                        Echo::Node(w, ws) => {
+                            self.result.push(w);
                             self.q.push(PathAction::Pop);
-                            for ylet in ys {
-                                self.q.push(PathAction::Emit(ylet)); 
+                            for wlet in ws {
+                                self.q.push(PathAction::Emit(wlet)); 
                             }
                         },
                     }
-                },
+                }, 
                 PathAction::Pop => {
                     self.result.pop();
                 },
@@ -107,15 +106,9 @@ impl<'a, T> Iterator for Paths<'a, T> {
         }
         None
     }
-}*/
-
-/*impl<'a> Paths<'a, Tree> {
-    fn new(input : &'a Tree) -> Self {
-        Paths{ result : vec![], q : vec![PathAction::Emit(input)] }
-    }
 }
 
-impl<'a> Iterator for Paths<'a, Tree> {
+/*impl<'a> Iterator for Paths<'a, Tree> {
     type Item = Vec<&'a Tree>;
     fn next(&mut self) -> Option<Self::Item> {
         while self.q.len() != 0 {
@@ -202,6 +195,13 @@ mod test {
         };
     }
 
+    fn blarg<'a>(t : &'a Tree) -> Echo<'a, Tree> {
+        match t {
+            x @ Tree::Leaf(_) => Echo::Terminal(x),
+            x @ Tree::Node(y, z) => Echo::Node(x, vec![z, y]),
+        }
+    }
+
     #[test]
     fn path_should_create_paths() {
         let input = Tree::Node(
@@ -214,7 +214,7 @@ mod test {
             )
         );
 
-        let paths = Paths::new(&input).into_iter().collect::<Vec<_>>();
+        let paths = Paths::new(&input, blarg).into_iter().collect::<Vec<_>>();
 
         assert_eq!( paths.len(), 3 );
 
@@ -255,7 +255,7 @@ mod test {
     }
 
     #[test]
-    fn blarg() {
+    fn test_blarg() {
         let x = Tree::Node(
             Box::new(Tree::Leaf(1)),
             Box::new(
@@ -279,7 +279,7 @@ mod test {
             println!("{:?}", wlet);
         }*/
 
-        let ps = Paths::new(&x);
+        let ps = Paths::new(&x, blarg);
 
         println!("====");
 
