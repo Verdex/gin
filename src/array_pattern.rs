@@ -7,6 +7,7 @@ pub enum MatchError {
     FatalEndOfFile,
 }
 
+#[macro_export]
 macro_rules! alt {
     ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = $($m:ident)|+ => |$name:ident| $b:block) => {
         fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $t_in)> + Clone)) -> Result<$t_out, MatchError> {
@@ -54,6 +55,7 @@ macro_rules! alt {
     };
 }
 
+#[macro_export]
 macro_rules! group { 
     ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = |$input:ident| $b:block) => {
         fn $matcher_name<$life>($input : &mut (impl Iterator<Item = (usize, $t_in)> + Clone)) -> Result<$t_out, MatchError> {
@@ -71,6 +73,7 @@ macro_rules! group {
     };
 }
 
+#[macro_export]
 macro_rules! pred {
     ($matcher_name:ident<$life:lifetime> : $t_in:ty => $t_out:ty = |$item:ident| $predicate:expr => $b:block) => {
         fn $matcher_name<$life>(input : &mut (impl Iterator<Item = (usize, $t_in)> + Clone)) -> Result<$t_out, MatchError> {
@@ -107,6 +110,7 @@ macro_rules! pred {
     };
 }
 
+#[macro_export]
 macro_rules! cases {
     // ident <= ident 
     ($input:ident, $rp:ident, $n:ident <= $matcher:ident, $($rest:tt)*) => {
@@ -260,6 +264,7 @@ macro_rules! cases {
     };
 }
 
+#[macro_export]
 macro_rules! seq {
     ($matcher_name:ident<$life:lifetime> : $in_t:ty => $out_t:ty = $($rest:tt)*) => {
         #[allow(dead_code)]
