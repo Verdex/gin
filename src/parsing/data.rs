@@ -9,4 +9,6 @@ pub struct TMeta {
 pub enum Token {
     LowerSymbol(TMeta, String),
     UpperSymbol(TMeta, String),
+    Number(TMeta, f64),
+    String(TMeta, String),
 }
