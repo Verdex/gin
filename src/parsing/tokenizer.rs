@@ -1,10 +1,46 @@
 
-use crate::array_pattern::*;
+use crate::{alt, group, pred, seq, cases};
+use crate::array_pattern::MatchError;
 use super::data::{Token, TMeta};
 
 pub fn tokenize( input : &str ) -> Result<Vec<Token>, String> {
     Err("TODO".into())
 }
+
+enum I {
+    T(Token),
+    Junk,
+}
+
+fn internal_tokenize( input : &str ) -> Result<Vec<I>, MatchError> {
+    let mut x = input.char_indices().enumerate();
+
+    alt!( token: (usize, char) => I = junk | junk );
+
+    let mut ret = vec![];
+    loop {
+        match token(&mut x) {
+            Ok(t) => ret.push(t),
+            Err(MatchError::ErrorEndOfFile) => break,
+            Err(e) => return Err(e),
+        }
+    }
+
+    Ok(ret)
+}
+
+group!(junk: (usize, char) => I = |input| {
+    pred!(ws: (usize, char) => () = |c| c.1.is_whitespace() => { () });
+    seq!(whitespace: (usize, char) => I = ws, * ws, { I::Junk });
+
+    pred!(end_line: (usize, char) => () = |c| c.1 == '\n' || c.1 == '\r' => { () });
+    pred!(anything: (usize, char) => () = |c| c.1 != '\n' && c.1 != '\r' => { () });
+    seq!(comment: (usize, char) => I = (_, '#'), * anything, end_line, { I::Junk });
+
+    alt!(main: (usize, char) => I = whitespace | comment);
+
+    main(input)
+});
 
 
 #[cfg(test)]
