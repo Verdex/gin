@@ -18,6 +18,7 @@ fn internal_tokenize( input : &str ) -> Result<Vec<I>, MatchError> {
     alt!( token: (usize, char) => I = junk 
                                     | lower_symbol 
                                     | upper_symbol
+                                    | string
                                     );
 
     let mut ret = vec![];
@@ -75,6 +76,30 @@ group!(upper_symbol: (usize, char) => I = |input| {
         let meta = TMeta { start, end };
         I::T(Token::UpperSymbol(meta, format!( "{}{}", init.1, rs.into_iter().map(|x| x.1).collect::<String>())))
     } );
+
+    main(input)
+});
+
+group!(string: (usize, char) => I = |input| {
+    seq!(n: (usize, char) => char = (_, 'n'), { '\n' });
+    seq!(r: (usize, char) => char = (_, 'r'), { '\r' });
+    seq!(t: (usize, char) => char = (_, 't'), { '\t' });
+    seq!(slash: (usize, char) => char = (_, '\\'), { '\\' });
+    seq!(zero: (usize, char) => char = (_, '0'), { '\0' });
+    seq!(quote: (usize, char) => char = (_, '"'), { '"' });
+
+    alt!(code: (usize, char) => char = n | r | t | slash | zero | quote);
+    seq!(escape: (usize, char) => char = slash, c <= ! code, { c });
+
+    pred!(any: (usize, char) => char = |c| c.1 != '"' => { c.1 });
+    alt!(str_char: (usize, char) => char = escape
+                                         | any  
+                                         );
+
+    seq!(main: (usize, char) => I = _1 <= (_, '"'), sc <= * str_char, _2 <= (_, '"'), {
+        let meta = TMeta { start: _1.0, end: _2.0 };
+        I::T(Token::String(meta, sc.into_iter().collect::<String>()))
+    });
 
     main(input)
 });
