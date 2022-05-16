@@ -15,7 +15,10 @@ enum I {
 fn internal_tokenize( input : &str ) -> Result<Vec<I>, MatchError> {
     let mut x = input.char_indices().enumerate();
 
-    alt!( token: (usize, char) => I = junk | junk );
+    alt!( token: (usize, char) => I = junk 
+                                    | lower_symbol 
+                                    | upper_symbol
+                                    );
 
     let mut ret = vec![];
     loop {
@@ -42,6 +45,39 @@ group!(junk: (usize, char) => I = |input| {
     main(input)
 });
 
+group!(lower_symbol: (usize, char) => I = |input| {
+    pred!(init_lower_symbol_char: (usize, char) = |c| c.1.is_lowercase() || c.1 == '_');
+    pred!(rest_lower_symbol_char: (usize, char) = |c| c.1.is_alphanumeric() || c.1 == '_');
+    alt!(both: (usize, char) = init_lower_symbol_char | rest_lower_symbol_char );
+    seq!(main: (usize, char) => I = init <= init_lower_symbol_char, rs <= * both, {
+        let start = init.0;
+        let end = match rs.last() {
+            Some(x) => x.0,
+            None => init.0,
+        };
+        let meta = TMeta { start, end };
+        I::T(Token::LowerSymbol(meta, format!( "{}{}", init.1, rs.into_iter().map(|x| x.1).collect::<String>())))
+    } );
+
+    main(input)
+});
+
+group!(upper_symbol: (usize, char) => I = |input| { 
+    pred!(init_upper_symbol_char: (usize, char) = |c| c.1.is_uppercase());
+    pred!(rest_upper_symbol_char: (usize, char) = |c| c.1.is_alphanumeric());
+    alt!(both: (usize, char) = init_upper_symbol_char | rest_upper_symbol_char );
+    seq!(main: (usize, char) => I = init <= init_upper_symbol_char, rs <= * both, {
+        let start = init.0;
+        let end = match rs.last() {
+            Some(x) => x.0,
+            None => init.0,
+        };
+        let meta = TMeta { start, end };
+        I::T(Token::UpperSymbol(meta, format!( "{}{}", init.1, rs.into_iter().map(|x| x.1).collect::<String>())))
+    } );
+
+    main(input)
+});
 
 #[cfg(test)]
 mod test {
@@ -53,7 +89,7 @@ mod test {
         blah"#;
         let output = internal_tokenize(input)?;
 
-        assert_eq!( output.len(), 2 );
+        assert_eq!( output.len(), 3 );
 
         assert!( matches!( output[0], I::Junk ) );
         
