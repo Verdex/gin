@@ -104,6 +104,50 @@ group!(string: (usize, char) => I = |input| {
     main(input)
 });
 
+/*group!(number: (usize, char) => I = |input| { 
+    pred!(digit<'a>: char => char = |c : char| c.is_digit(10));
+    seq!(zero_or_more ~ digits<'a>: char => char = d <= digit, { d });
+    seq!(maybe ~ dot<'a>: char => char = d <= '.', { d });
+
+    seq!(little_e<'a>: char => char = e <= 'e', { e });
+    seq!(big_e<'a>: char => char = e <= 'E', { e });
+    alt!(e<'a>: char => char = little_e | big_e);
+
+    seq!(plus<'a>: char => char = p <= '+', { p });
+    seq!(minus<'a>: char => char = m <= '-', { m });
+    alt!(sign<'a>: char => char = plus | minus );
+    seq!(maybe ~ maybe_sign<'a>: char => char = s <= sign, { s });
+
+    seq!(maybe ~ science<'a>: char => String = _e <= e, ms <= maybe_sign, init <= digit, ds <= digits, {
+        match ms {
+            Some(x) => format!("e{}{}{}", x, init, ds.into_iter().collect::<String>()),
+            None => format!("e{}{}", init, ds.into_iter().collect::<String>()),
+        }
+    } );
+
+    alt!(initial<'a>: char => char = sign | digit );
+
+    seq!(main<'a>: char => String = init <= initial, whole <= digits, d <= dot, fractional <= digits, s <= science, {
+        let ret = format!("{}{}", init, whole.into_iter().collect::<String>());
+        let ret = match d { 
+            Some(_) => format!("{}.{}", ret, fractional.into_iter().collect::<String>()),
+            None => ret,
+        };
+        match s {
+            Some(s) => format!("{}{}", ret, s),
+            None => ret,
+        }
+    });
+
+    match main(input) {
+        Ok(Success { item, start, end }) => {
+            let ret = item.parse::<f64>().expect("allowed number string that rust fails to parse with parse::<f64>()");
+            Ok(Success { item: InternalToken::Number(ret), start, end })
+        },
+        Err(e) => Err(e),
+    }
+});*/
+
 #[cfg(test)]
 mod test {
     use super::*;
