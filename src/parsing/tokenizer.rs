@@ -50,21 +50,13 @@ mod test {
     #[test]
     fn should_parse_comment() -> Result<(), MatchError> {
         let input = r#"#this is a comment
-                        false
-        "#;
+        blah"#;
         let output = internal_tokenize(input)?;
 
-        assert_eq!( output.len(), 4 );
-        assert_eq!( output[2].start, 43 );
-        assert_eq!( output[2].end,  47);
+        assert_eq!( output.len(), 2 );
 
-        let name = match &output[2].item {
-            InternalToken::Bool(n) => *n,
-            _ => panic!("not bool"),
-        };
-
-        assert_eq!( name, false );
-
+        assert!( matches!( output[0], I::Junk ) );
+        
         Ok(())
     }
 
@@ -74,15 +66,8 @@ mod test {
         let output = internal_tokenize(input)?;
 
         assert_eq!( output.len(), 2 );
-        assert_eq!( output[1].start, 9 );
-        assert_eq!( output[1].end,  13);
 
-        let name = match &output[1].item {
-            InternalToken::Bool(n) => *n,
-            _ => panic!("not bool"),
-        };
-
-        assert_eq!( name, false );
+        assert!( matches!( output[0], I::Junk ) );
 
         Ok(())
     }
@@ -93,15 +78,14 @@ mod test {
             let output = internal_tokenize(input)?;
 
             assert_eq!( output.len(), 1 );
-            assert_eq!( output[0].start, 0 );
-            assert_eq!( output[0].end, input.len() - 1 );
 
-            let value = match &output[0].item {
-                InternalToken::String(n) => n.clone(),
+            let (start, end, value) = match &output[0] {
+                I::T(Token::String(m, n)) => (m.start, m.end, n.clone()),
                 _ => panic!("not string"),
             };
 
-            println!("{}", value);
+            assert_eq!( start, 0 );
+            assert_eq!( end, input.len() - 1 );
             assert_eq!( value, expected );
             Ok(())
         }
@@ -123,14 +107,14 @@ mod test {
             let output = internal_tokenize(input)?;
 
             assert_eq!( output.len(), 1 );
-            assert_eq!( output[0].start, 0 );
-            assert_eq!( output[0].end, input.len() - 1 );
 
-            let value = match &output[0].item {
-                InternalToken::Number(n) => *n,
+            let (start, end, value) = match &output[0] {
+                I::T(Token::Number(m, n)) => (m.start, m.end, *n),
                 _ => panic!("not number"),
             };
 
+            assert_eq!( start, 0 );
+            assert_eq!( end, input.len() - 1 );
             assert_eq!( value, expected );
             Ok(())
         }
@@ -158,53 +142,15 @@ mod test {
         let output = internal_tokenize(input)?;
 
         assert_eq!( output.len(), 1 );
-        assert_eq!( output[0].start, 0 );
-        assert_eq!( output[0].end, input.len() - 1 );
 
-        let name = match &output[0].item {
-            InternalToken::LowerSymbol(n) => n.clone(),
+        let (start, end, name) = match &output[0] {
+            I::T(Token::LowerSymbol(m, n)) => (m.start, m.end, n.clone()),
             _ => panic!("not lower symbol"),
         };
 
+        assert_eq!( start, 0 );
+        assert_eq!( end, input.len() - 1 );
         assert_eq!( name, "false_" );
-
-        Ok(())
-    }
-
-    #[test]
-    fn should_parse_false() -> Result<(), MatchError> {
-        let input = "false";
-        let output = internal_tokenize(input)?;
-
-        assert_eq!( output.len(), 1 );
-        assert_eq!( output[0].start, 0 );
-        assert_eq!( output[0].end, input.len() - 1 );
-
-        let name = match &output[0].item {
-            InternalToken::Bool(n) => *n,
-            _ => panic!("not bool"),
-        };
-
-        assert_eq!( name, false );
-
-        Ok(())
-    }
-
-    #[test]
-    fn should_parse_true() -> Result<(), MatchError> {
-        let input = "true";
-        let output = internal_tokenize(input)?;
-
-        assert_eq!( output.len(), 1 );
-        assert_eq!( output[0].start, 0 );
-        assert_eq!( output[0].end, input.len() - 1 );
-
-        let name = match &output[0].item {
-            InternalToken::Bool(n) => *n,
-            _ => panic!("not bool"),
-        };
-
-        assert_eq!( name, true );
 
         Ok(())
     }
@@ -215,14 +161,14 @@ mod test {
         let output = internal_tokenize(input)?;
 
         assert_eq!( output.len(), 1 );
-        assert_eq!( output[0].start, 0 );
-        assert_eq!( output[0].end, input.len() - 1 );
 
-        let name = match &output[0].item {
-            InternalToken::LowerSymbol(n) => n.clone(),
+        let (start, end, name) = match &output[0] {
+            I::T(Token::LowerSymbol(m, n)) => (m.start, m.end, n.clone()),
             _ => panic!("not lower symbol"),
         };
 
+        assert_eq!( start, 0 );
+        assert_eq!( end, input.len() - 1 );
         assert_eq!( name, "lower_symbol" );
 
         Ok(())
@@ -234,14 +180,14 @@ mod test {
         let output = internal_tokenize(input)?;
 
         assert_eq!( output.len(), 1 );
-        assert_eq!( output[0].start, 0 );
-        assert_eq!( output[0].end, input.len() - 1 );
 
-        let name = match &output[0].item {
-            InternalToken::LowerSymbol(n) => n.clone(),
+        let (start, end, name) = match &output[0] {
+            I::T(Token::LowerSymbol(m, n)) => (m.start, m.end, n.clone()),
             _ => panic!("not lower symbol"),
         };
 
+        assert_eq!( start, 0 );
+        assert_eq!( end, input.len() - 1 );
         assert_eq!( name, "l" );
 
         Ok(())
@@ -253,14 +199,14 @@ mod test {
         let output = internal_tokenize(input)?;
 
         assert_eq!( output.len(), 1 );
-        assert_eq!( output[0].start, 0 );
-        assert_eq!( output[0].end, input.len() - 1 );
 
-        let name = match &output[0].item {
-            InternalToken::UpperSymbol(n) => n.clone(),
+        let (start, end, name) = match &output[0] {
+            I::T(Token::UpperSymbol(m, n)) => (m.start, m.end, n.clone()),
             _ => panic!("not upper symbol"),
         };
 
+        assert_eq!( start, 0 );
+        assert_eq!( end, input.len() - 1 );
         assert_eq!( name, "UpperSymbol" );
 
         Ok(())
@@ -272,14 +218,14 @@ mod test {
         let output = internal_tokenize(input)?;
 
         assert_eq!( output.len(), 1 );
-        assert_eq!( output[0].start, 0 );
-        assert_eq!( output[0].end, input.len() - 1 );
 
-        let name = match &output[0].item {
-            InternalToken::UpperSymbol(n) => n.clone(),
+        let (start, end, name) = match &output[0] {
+            I::T(Token::UpperSymbol(m, n)) => (m.start, m.end, n.clone()),
             _ => panic!("not upper symbol"),
         };
 
+        assert_eq!( start, 0 );
+        assert_eq!( end, input.len() - 1 );
         assert_eq!( name, "U" );
 
         Ok(())
