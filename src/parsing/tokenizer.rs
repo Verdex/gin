@@ -206,40 +206,40 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn should_parse_numbers() -> Result<(), MatchError> {
-        fn t(input : &str, expected : f64) -> Result<(), MatchError> {
-            let output = internal_tokenize(input)?;
+    macro_rules! number_test {
+        ($name:ident: $input:expr => $expected:expr) => {
+            #[test]
+            fn $name() -> Result<(), MatchError> {
+                let output = internal_tokenize($input)?;
 
-            assert_eq!( output.len(), 1 );
+                assert_eq!( output.len(), 1 );
 
-            let (start, end, value) = match &output[0] {
-                I::T(Token::Number(m, n)) => (m.start, m.end, *n),
-                _ => panic!("not number"),
-            };
+                let (start, end, value) = match &output[0] {
+                    I::T(Token::Number(m, n)) => (m.start, m.end, *n),
+                    _ => panic!("not number"),
+                };
 
-            assert_eq!( start, 0 );
-            assert_eq!( end, input.len() - 1 );
-            assert_eq!( value, expected );
-            Ok(())
-        }
-
-        t("0", 0.0)?;
-        t("0.0", 0.0)?;
-        t("1E1", 1E1)?;
-        t("1e1", 1e1)?;
-        t("+1.0", 1.0)?;
-        t("-1.0", -1.0)?;
-        t("1E+1", 1E+1)?;
-        t("1e+1", 1e+1)?;
-        t("1234.5678", 1234.5678)?;
-        t("1234.5678E-90", 1234.5678E-90)?;
-        t("1234.5678e-90", 1234.5678e-90)?;
-        t("1234.5678e-901", 1234.5678e-901)?;
-        t("1234", 1234.0)?;
-
-        Ok(())
+                assert_eq!( start, 0 );
+                assert_eq!( end, $input.len() - 1 );
+                assert_eq!( value, $expected );
+                Ok(())
+            }
+        };
     }
+
+    number_test!(should_parse_zero: "0" => 0.0);
+    number_test!(should_parse_zero_point_zero: "0.0" => 0.0);
+    number_test!(should_parse_sci_not_big_e: "1E1" => 1E1);
+    number_test!(should_parse_sci_not_little_e: "1e1" => 1e1);
+    number_test!(should_parse_plus_one: "+1.0" => 1.0);
+    number_test!(should_parse_neg_one: "-1.0" => -1.0);
+    number_test!(should_parse_sci_not_plus_big_e: "1E+1" => 1E+1);
+    number_test!(should_parse_sci_not_plus_little_e: "1e+1" => 1e+1);
+    number_test!(should_parse_decimal: "1234.5678" => 1234.5678);
+    number_test!(should_parse_decimal_with_sci_not_neg_big_e: "1234.5678E-90" => 1234.5678E-90);
+    number_test!(should_parse_decimal_with_sci_not_neg_little_e: "1234.5678e-90" => 1234.5678e-90);
+    number_test!(should_parse_decimal_with_sci_not_neg_little_e_901: "1234.5678e-901" => 1234.5678e-901);
+    number_test!(should_parse_number: "1234" => 1234.0);
 
     #[test]
     fn should_parse_boolean_starting_lower_symbol() -> Result<(), MatchError> {
