@@ -19,6 +19,7 @@ fn internal_tokenize( input : &str ) -> Result<Vec<I>, MatchError> {
                                     | lower_symbol 
                                     | upper_symbol
                                     | string
+                                    | number
                                     );
 
     let mut ret = vec![];
@@ -104,28 +105,67 @@ group!(string: (usize, char) => I = |input| {
     main(input)
 });
 
+group!(number: (usize, char) => I = |input| { 
+    pred!(digit: (usize, char) = |c| c.1.is_digit(10));
+
+    seq!(decimal: (usize, char) => (usize, String) = (_, '.'), d <= ! digit, ds <= * digit, {
+        let end = match ds.last() {
+            Some(x) => x.0,
+            None => d.0,
+        };
+        (end, format!("{}{}", d.1, ds.into_iter().map(|x| x.1).collect::<String>()))
+    });
+
+    seq!(main: (usize, char) => I = sign <= ? (_, '+') | (_, '-')
+                                  , d <= digit
+                                  , ds <= * digit
+                                  , maybe_decimal <= ? decimal, {
+        fn m<T : Into<String>>(input : Option<(usize, T)>) -> String {
+            match input { 
+                Some((_, x)) => x.into(),
+                None => "".into()
+            }
+        }
+        let start = match sign {
+            Some(x) => x.0,
+            None => d.0,
+        };
+        let end = {
+            let mut ret = d.0;
+            match &maybe_decimal {
+                Some(x) => ret = x.0,
+                None => { },
+            }
+            match ds.last() {
+                Some(x) => ret = x.0,
+                None => { },
+            }
+            ret
+        };
+        let meta = TMeta { start, end };
+        let n = format!("{}{}{}{}"
+                       , m(sign)
+                       , d.1
+                       , ds.into_iter().map(|x| x.1).collect::<String>()
+                       , m(maybe_decimal));
+        let ret = n.parse::<f64>().expect("allowed number string that rust fails to parse with parse::<f64>()");
+        I::T(Token::Number(meta, ret))
+    });
+
+    main(input)
+});
+
 /*group!(number: (usize, char) => I = |input| { 
-    pred!(digit<'a>: char => char = |c : char| c.is_digit(10));
-    seq!(zero_or_more ~ digits<'a>: char => char = d <= digit, { d });
-    seq!(maybe ~ dot<'a>: char => char = d <= '.', { d });
+    pred!(digit: (usize, char) => char = |c| c.1.is_digit(10) => { c.1 });
 
-    seq!(little_e<'a>: char => char = e <= 'e', { e });
-    seq!(big_e<'a>: char => char = e <= 'E', { e });
-    alt!(e<'a>: char => char = little_e | big_e);
-
-    seq!(plus<'a>: char => char = p <= '+', { p });
-    seq!(minus<'a>: char => char = m <= '-', { m });
-    alt!(sign<'a>: char => char = plus | minus );
-    seq!(maybe ~ maybe_sign<'a>: char => char = s <= sign, { s });
-
-    seq!(maybe ~ science<'a>: char => String = _e <= e, ms <= maybe_sign, init <= digit, ds <= digits, {
+    seq!(science: (usize, char) => String = 'e'|'E', ms <= ? '+'|'-', init <= ! digit, ds <= * digit, {
         match ms {
             Some(x) => format!("e{}{}{}", x, init, ds.into_iter().collect::<String>()),
             None => format!("e{}{}", init, ds.into_iter().collect::<String>()),
         }
     } );
 
-    alt!(initial<'a>: char => char = sign | digit );
+    alt!(initial: char => char = sign | digit );
 
     seq!(main<'a>: char => String = init <= initial, whole <= digits, d <= dot, fractional <= digits, s <= science, {
         let ret = format!("{}{}", init, whole.into_iter().collect::<String>());
@@ -229,6 +269,8 @@ mod test {
 
     number_test!(should_parse_zero: "0" => 0.0);
     number_test!(should_parse_zero_point_zero: "0.0" => 0.0);
+    number_test!(should_parse_negative: "-1" => -1.0);
+    number_test!(should_parse_plus: "+1" => 1.0);
     number_test!(should_parse_sci_not_big_e: "1E1" => 1E1);
     number_test!(should_parse_sci_not_little_e: "1e1" => 1e1);
     number_test!(should_parse_plus_one: "+1.0" => 1.0);
