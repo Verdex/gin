@@ -106,6 +106,13 @@ group!(string: (usize, char) => I = |input| {
 });
 
 group!(number: (usize, char) => I = |input| { 
+    fn m<T : Into<String>>(input : Option<(usize, T)>) -> String {
+        match input { 
+            Some((_, x)) => x.into(),
+            None => "".into()
+        }
+    }
+
     pred!(digit: (usize, char) = |c| c.1.is_digit(10));
 
     seq!(decimal: (usize, char) => (usize, String) = (_, '.'), d <= ! digit, ds <= * digit, {
@@ -116,16 +123,26 @@ group!(number: (usize, char) => I = |input| {
         (end, format!("{}{}", d.1, ds.into_iter().map(|x| x.1).collect::<String>()))
     });
 
+    seq!(sci_not: (usize, char) => (usize, String) = (_, 'e') | (_, 'E')
+                                                   , sign <= ? (_, '+') | (_, '-')
+                                                   , d <= ! digit
+                                                   , ds <= * digit, {
+        let end = match ds.last() {
+            Some(x) => x.0,
+            None => d.0,
+        };
+
+        (end, format!( "e{}{}{}"
+                     , m(sign)
+                     , d.1
+                     , ds.into_iter().map(|x| x.1).collect::<String>()))
+    });
+
     seq!(main: (usize, char) => I = sign <= ? (_, '+') | (_, '-')
                                   , d <= digit
                                   , ds <= * digit
-                                  , maybe_decimal <= ? decimal, {
-        fn m<T : Into<String>>(input : Option<(usize, T)>) -> String {
-            match input { 
-                Some((_, x)) => x.into(),
-                None => "".into()
-            }
-        }
+                                  , maybe_decimal <= ? decimal
+                                  , maybe_sci_not <= ? sci_not, {
         let start = match sign {
             Some(x) => x.0,
             None => d.0,
@@ -140,6 +157,10 @@ group!(number: (usize, char) => I = |input| {
                 Some(x) => ret = x.0,
                 None => { },
             }
+            match &maybe_sci_not {
+                Some(x) => ret = x.0,
+                None => { },
+            }
             ret
         };
         let meta = TMeta { start, end };
@@ -147,12 +168,13 @@ group!(number: (usize, char) => I = |input| {
             Some(_) => ".",
             None => "",
         };
-        let n = format!("{}{}{}{}{}"
+        let n = format!("{}{}{}{}{}{}"
                        , m(sign)
                        , d.1
                        , ds.into_iter().map(|x| x.1).collect::<String>()
                        , dot
-                       , m(maybe_decimal));
+                       , m(maybe_decimal)
+                       , m(maybe_sci_not));
         let ret = n.parse::<f64>().expect("allowed number string that rust fails to parse with parse::<f64>()");
         I::T(Token::Number(meta, ret))
     });
