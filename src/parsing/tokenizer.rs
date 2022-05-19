@@ -132,21 +132,26 @@ group!(number: (usize, char) => I = |input| {
         };
         let end = {
             let mut ret = d.0;
-            match &maybe_decimal {
+            match ds.last() {
                 Some(x) => ret = x.0,
                 None => { },
             }
-            match ds.last() {
+            match &maybe_decimal {
                 Some(x) => ret = x.0,
                 None => { },
             }
             ret
         };
         let meta = TMeta { start, end };
-        let n = format!("{}{}{}{}"
+        let dot = match maybe_decimal {
+            Some(_) => ".",
+            None => "",
+        };
+        let n = format!("{}{}{}{}{}"
                        , m(sign)
                        , d.1
                        , ds.into_iter().map(|x| x.1).collect::<String>()
+                       , dot
                        , m(maybe_decimal));
         let ret = n.parse::<f64>().expect("allowed number string that rust fails to parse with parse::<f64>()");
         I::T(Token::Number(meta, ret))
