@@ -211,34 +211,34 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn should_parse_string() -> Result<(), MatchError> {
-        fn t(input : &str, expected : &str) -> Result<(), MatchError> {
-            let output = internal_tokenize(input)?;
+    macro_rules! string_test {
+        ($name:ident: $input:expr => $expected:expr) => {
+            #[test]
+            fn $name() -> Result<(), MatchError> {
+                let output = internal_tokenize($input)?;
 
-            assert_eq!( output.len(), 1 );
+                assert_eq!( output.len(), 1 );
 
-            let (start, end, value) = match &output[0] {
-                I::T(Token::String(m, n)) => (m.start, m.end, n.clone()),
-                _ => panic!("not string"),
-            };
+                let (start, end, value) = match &output[0] {
+                    I::T(Token::String(m, n)) => (m.start, m.end, n.clone()),
+                    _ => panic!("not string"),
+                };
 
-            assert_eq!( start, 0 );
-            assert_eq!( end, input.len() - 1 );
-            assert_eq!( value, expected );
-            Ok(())
-        }
-
-        t(r#""string input""#, "string input")?;
-        t(r#""string \n input""#, "string \n input")?;
-        t(r#""string \r input""#, "string \r input")?;
-        t(r#""string \0 input""#, "string \0 input")?;
-        t(r#""string \t input""#, "string \t input")?;
-        t(r#""string \\ input""#, "string \\ input")?;
-        t(r#""string \" input""#, "string \" input")?;
-
-        Ok(())
+                assert_eq!( start, 0 );
+                assert_eq!( end, $input.len() - 1 );
+                assert_eq!( value, $expected );
+                Ok(())
+            }
+        };
     }
+
+    string_test!(should_parse_string: r#""string input""# => "string input");
+    string_test!(should_parse_string_with_slash_n: r#""string \n input""# => "string \n input");
+    string_test!(should_parse_string_with_slash_r: r#""string \r input""# => "string \r input");
+    string_test!(should_parse_string_with_slash_zero: r#""string \0 input""# => "string \0 input");
+    string_test!(should_parser_string_with_slash_t: r#""string \t input""# => "string \t input");
+    string_test!(should_parse_string_with_slash_slash: r#""string \\ input""# => "string \\ input");
+    string_test!(should_parse_string_with_slash_quote: r#""string \" input""# => "string \" input");
 
     macro_rules! number_test {
         ($name:ident: $input:expr => $expected:expr) => {
