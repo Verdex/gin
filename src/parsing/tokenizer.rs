@@ -20,6 +20,7 @@ fn internal_tokenize( input : &str ) -> Result<Vec<I>, MatchError> {
                                     | upper_symbol
                                     | string
                                     | number
+                                    | punctuation
                                     );
 
     let mut ret = vec![];
@@ -182,9 +183,116 @@ group!(number: (usize, char) => I = |input| {
     main(input)
 });
 
+group!(punctuation: (usize, char) => I = |input| {
+    seq!(single: (usize, char) => I = p <= (_, '(')
+                                           | (_, ')')
+                                           | (_, '.')
+                                           | (_, ':')
+                                           | (_, '<')
+                                           | (_, '>'), {
+        I::T(Token::Punct(TMeta { start: p.0, end: p.0 }, p.1.into()))
+    });
+    seq!(single_left_arrow: (usize, char) => I = _1 <= (_, '<'), _2 <= (_, '-'), {
+        I::T(Token::Punct(TMeta { start: _1.0, end: _2.0 }, "<-".into()))
+    });
+    seq!(double_left_arrow: (usize, char) => I = _1 <= (_, '<'), _2 <= (_, '='), {
+        I::T(Token::Punct(TMeta { start: _1.0, end: _2.0 }, "<=".into()))
+    });
+    seq!(single_right_arrow: (usize, char) => I = _1 <= (_, '-'), _2 <= (_, '>'), {
+        I::T(Token::Punct(TMeta { start: _1.0, end: _2.0 }, "<-".into()))
+    });
+    seq!(double_right_arrow: (usize, char) => I = _1 <= (_, '='), _2 <= (_, '>'), {
+        I::T(Token::Punct(TMeta { start: _1.0, end: _2.0 }, "<=".into()))
+    });
+    alt!(main: (usize, char) => I = single_left_arrow
+                                  | double_left_arrow
+                                  | single_right_arrow
+                                  | double_right_arrow
+                                  | single );
+
+    main(input)
+});
+
+
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn should_parse_right_angle() -> Result<(), MatchError> {
+        let input = r#">"#;
+        let output = internal_tokenize(input)?;
+
+        assert_eq!( output.len(), 1 );
+
+        let (start, end, value) = match &output[0] {
+            I::T(Token::Punct(m, n)) => (m.start, m.end, n.clone()),
+            _ => panic!("not punctuation"),
+        };
+
+        assert_eq!( start, 0 );
+        assert_eq!( end, 0 );
+        assert_eq!( value, ">" );
+        
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_left_angle() -> Result<(), MatchError> {
+        let input = r#"<"#;
+        let output = internal_tokenize(input)?;
+
+        assert_eq!( output.len(), 1 );
+
+        let (start, end, value) = match &output[0] {
+            I::T(Token::Punct(m, n)) => (m.start, m.end, n.clone()),
+            _ => panic!("not punctuation"),
+        };
+
+        assert_eq!( start, 0 );
+        assert_eq!( end, 0 );
+        assert_eq!( value, "<" );
+        
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_double_left_arrow() -> Result<(), MatchError> {
+        let input = r#"<="#;
+        let output = internal_tokenize(input)?;
+
+        assert_eq!( output.len(), 1 );
+
+        let (start, end, value) = match &output[0] {
+            I::T(Token::Punct(m, n)) => (m.start, m.end, n.clone()),
+            _ => panic!("not punctuation"),
+        };
+
+        assert_eq!( start, 0 );
+        assert_eq!( end, 1 );
+        assert_eq!( value, "<=" );
+        
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_single_left_arrow() -> Result<(), MatchError> {
+        let input = r#"<-"#;
+        let output = internal_tokenize(input)?;
+
+        assert_eq!( output.len(), 1 );
+
+        let (start, end, value) = match &output[0] {
+            I::T(Token::Punct(m, n)) => (m.start, m.end, n.clone()),
+            _ => panic!("not punctuation"),
+        };
+
+        assert_eq!( start, 0 );
+        assert_eq!( end, 1 );
+        assert_eq!( value, "<-" );
+        
+        Ok(())
+    }
 
     #[test]
     fn should_parse_comment() -> Result<(), MatchError> {

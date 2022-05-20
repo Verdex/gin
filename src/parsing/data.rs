@@ -11,4 +11,5 @@ pub enum Token {
     UpperSymbol(TMeta, String),
     Number(TMeta, f64),
     String(TMeta, String),
+    Punct(TMeta, String),
 }
