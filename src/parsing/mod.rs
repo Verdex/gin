@@ -1,4 +1,4 @@
 
-mod data;
-mod tokenizer;
+pub mod data;
+pub mod tokenizer;
 mod parser;

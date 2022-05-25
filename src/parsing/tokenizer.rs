@@ -53,11 +53,11 @@ fn internal_tokenize( input : &str ) -> Result<Vec<I>, MatchError> {
 }
 
 group!(junk: (usize, char) => I = |input| {
-    pred!(ws: (usize, char) => () = |c| c.1.is_whitespace() => { () });
+    pred!(ws: (usize, char) => () = |_c| _c.1.is_whitespace() => { () });
     seq!(whitespace: (usize, char) => I = ws, * ws, { I::Junk });
 
-    pred!(end_line: (usize, char) => () = |c| c.1 == '\n' || c.1 == '\r' => { () });
-    pred!(anything: (usize, char) => () = |c| c.1 != '\n' && c.1 != '\r' => { () });
+    pred!(end_line: (usize, char) => () = |_c| _c.1 == '\n' || _c.1 == '\r' => { () });
+    pred!(anything: (usize, char) => () = |_c| _c.1 != '\n' && _c.1 != '\r' => { () });
     seq!(comment: (usize, char) => I = (_, '#'), * anything, end_line, { I::Junk });
 
     alt!(main: (usize, char) => I = whitespace | comment);
