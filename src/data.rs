@@ -21,5 +21,8 @@ pub struct AMeta {
 
 #[derive(Debug)]
 pub enum Type {
-    ConcreteType()
+    ConcreteType(AMeta, String),
+    GenericType(AMeta, String),
+    IndexType(AMeta, String, Box<Type>),
+    ArrowType{ meta: AMeta, src: Box<Type>, dest: Box<Type> },
 }
