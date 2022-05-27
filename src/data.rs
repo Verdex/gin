@@ -13,3 +13,13 @@ pub enum Token {
     String(TMeta, String),
     Punct(TMeta, String),
 }
+
+#[derive(Debug)]
+pub struct AMeta {
+    token_meta : Vec<TMeta>,
+}
+
+#[derive(Debug)]
+pub enum Type {
+    ConcreteType()
+}

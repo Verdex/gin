@@ -2,7 +2,7 @@
 mod array_pattern;
 mod data_pattern;
 
-mod ast;
+mod data;
 mod parsing;
 
 fn main() {

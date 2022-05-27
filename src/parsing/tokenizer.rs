@@ -1,7 +1,7 @@
 
 use crate::{alt, group, pred, seq, cases};
 use crate::array_pattern::MatchError;
-use super::data::{Token, TMeta};
+use crate::data::{Token, TMeta};
 
 pub fn tokenize( input : &str ) -> Result<Vec<Token>, String> {
     match internal_tokenize(input) {
