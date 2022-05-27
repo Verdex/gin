@@ -16,7 +16,7 @@ pub enum Token {
 
 #[derive(Debug)]
 pub struct AMeta {
-    token_meta : Vec<TMeta>,
+    pub token_meta : Vec<TMeta>,
 }
 
 #[derive(Debug)]
