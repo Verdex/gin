@@ -292,6 +292,161 @@ mod test {
     use super::*;
 
     #[test]
+    fn blarg() -> Result<(), MatchError> {
+        #[derive(Debug)]
+        struct TMeta {
+            pub start : usize,
+            pub end : usize,
+        }
+        #[derive(Debug)]
+        enum Token {
+            Number(TMeta, f64),
+            LAngle(TMeta),
+            RAngle(TMeta),
+            SLArrow(TMeta),
+            SRArrow(TMeta),
+            DLArrow(TMeta),
+            DRArrow(TMeta),
+        }
+
+        group!(punctuation: (usize, char) => Token = |input| {
+            fn m(x : (usize, char)) -> TMeta {
+                TMeta { start: x.0, end: x.0 }
+            }
+            seq!(l_angle: (usize, char) => Token = p <= (_, '<'), { Token::LAngle(m(p)) });
+            seq!(r_angle: (usize, char) => Token = p <= (_, '>'), { Token::RAngle(m(p)) });
+
+            alt!(single: (usize, char) => Token = 
+                                             l_angle
+                                            | r_angle
+                                            );
+
+            seq!(single_left_arrow: (usize, char) => Token = _1 <= (_, '<'), _2 <= (_, '-'), {
+                Token::SLArrow(TMeta { start: _1.0, end: _2.0 })
+            });
+            seq!(double_left_arrow: (usize, char) => Token = _1 <= (_, '<'), _2 <= (_, '='), {
+                Token::DLArrow(TMeta { start: _1.0, end: _2.0 })
+            });
+            seq!(single_right_arrow: (usize, char) => Token = _1 <= (_, '-'), _2 <= (_, '>'), {
+                Token::SRArrow(TMeta { start: _1.0, end: _2.0 })
+            });
+            seq!(double_right_arrow: (usize, char) => Token = _1 <= (_, '='), _2 <= (_, '>'), {
+                Token::DRArrow(TMeta { start: _1.0, end: _2.0 })
+            });
+            alt!(main: (usize, char) => Token = single_left_arrow
+                                        | double_left_arrow
+                                        | single_right_arrow
+                                        | double_right_arrow
+                                        | single );
+
+            main(input)
+        });
+
+
+        group!(number: (usize, char) => Token = |input| { 
+            fn m<T : Into<String>>(input : Option<(usize, T)>) -> String {
+                match input { 
+                    Some((_, x)) => x.into(),
+                    None => "".into()
+                }
+            }
+
+            pred!(digit: (usize, char) = |c| c.1.is_digit(10));
+
+            seq!(decimal: (usize, char) => (usize, String) = (_, '.'), d <= ! digit, ds <= * digit, {
+                let end = match ds.last() {
+                    Some(x) => x.0,
+                    None => d.0,
+                };
+                (end, format!("{}{}", d.1, ds.into_iter().map(|x| x.1).collect::<String>()))
+            });
+
+            seq!(sci_not: (usize, char) => (usize, String) = (_, 'e') | (_, 'E')
+                                                        , sign <= ? (_, '+') | (_, '-')
+                                                        , d <= ! digit
+                                                        , ds <= * digit, {
+                let end = match ds.last() {
+                    Some(x) => x.0,
+                    None => d.0,
+                };
+
+                (end, format!( "e{}{}{}"
+                            , m(sign)
+                            , d.1
+                            , ds.into_iter().map(|x| x.1).collect::<String>()))
+            });
+
+            seq!(main: (usize, char) => Token = sign <= ? (_, '+') | (_, '-')
+                                        , d <= digit
+                                        , ds <= * digit
+                                        , maybe_decimal <= ? decimal
+                                        , maybe_sci_not <= ? sci_not, {
+                let start = match sign {
+                    Some(x) => x.0,
+                    None => d.0,
+                };
+                let end = {
+                    let mut ret = d.0;
+                    match ds.last() {
+                        Some(x) => ret = x.0,
+                        None => { },
+                    }
+                    match &maybe_decimal {
+                        Some(x) => ret = x.0,
+                        None => { },
+                    }
+                    match &maybe_sci_not {
+                        Some(x) => ret = x.0,
+                        None => { },
+                    }
+                    ret
+                };
+                let meta = TMeta { start, end };
+                let dot = match maybe_decimal {
+                    Some(_) => ".",
+                    None => "",
+                };
+                let n = format!("{}{}{}{}{}{}"
+                            , m(sign)
+                            , d.1
+                            , ds.into_iter().map(|x| x.1).collect::<String>()
+                            , dot
+                            , m(maybe_decimal)
+                            , m(maybe_sci_not));
+                let ret = n.parse::<f64>().expect("allowed number string that rust fails to parse with parse::<f64>()");
+                Token::Number(meta, ret)
+            });
+
+            main(input)
+        });
+        
+        fn h(input : &str) -> Result<Vec<Token>, MatchError> {
+            alt!( token: (usize, char) => Token = number
+                                            | punctuation
+                                            );
+
+
+            let mut x = input.char_indices().enumerate();
+
+            let mut ret = vec![];
+            loop {
+                match token(&mut x) {
+                    Ok(t) => ret.push(t),
+                    Err(MatchError::ErrorEndOfFile) => break,
+                    Err(e) => return Err(e),
+                }
+            }
+
+            Ok(ret)
+        }
+
+        let output = h("->")?;
+
+        assert!( matches!( output[0], Token::SRArrow(_) ), "{:?}", output[0] );
+        Ok(())
+    }
+
+    #[test]
     fn group_with_maybe_should_return_unused_symbol() {
         group!(x: u8 = |input| {
             seq!(a: u8 = ? 0x01, 0x02, { 0x01 });
