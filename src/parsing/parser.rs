@@ -66,13 +66,18 @@ mod test {
     use super::*;
 
     macro_rules! test_type {
-        ($name:ident: $input:expr => $expected:pat) => {
+        ($name:ident: $input:expr => $expected:pat => $x:block) => {
             #[test]
             fn $name() -> Result<(), MatchError> {
                 use super::super::tokenizer::tokenize;
                 if let Ok(tokens) = tokenize($input) {
                     let output = parse_type(&mut tokens.iter().enumerate())?;
-                    assert!( matches!( output, $expected ) );
+                    if let $expected = output {
+                        $x
+                    }
+                    else {
+                        panic!("expected pattern not found");
+                    }
                     Ok(())
                 }
                 else {
