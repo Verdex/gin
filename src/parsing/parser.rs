@@ -20,18 +20,18 @@ group!(parse_type<'a>: &'a Token => Type = |input| {
     });
 
     seq!(index<'a>: &'a Token => Type = name <= Token::UpperSymbol(_, _)
-                              , l <= Token::LAngle(_) 
-                              , indexer <= ! main
-                              , r <= ! Token::RAngle(_) 
-                              , {
+                                      , l <= Token::LAngle(_) 
+                                      , indexer <= ! main
+                                      , r <= ! Token::RAngle(_) 
+                                      , {
         let ameta = AMeta { token_meta: vec![name.meta(), l.meta(), r.meta()]};
         Type::Index(ameta, name.symbol_name(), Box::new(indexer))
     });
 
     seq!(paren<'a>: &'a Token => Type = Token::LParen(_)
-                              , t <= main
-                              , ! Token::RParen(_)
-                              , {
+                                      , t <= main
+                                      , ! Token::RParen(_)
+                                      , {
         t
     });
 
@@ -42,13 +42,13 @@ group!(parse_type<'a>: &'a Token => Type = |input| {
                                        );
 
     seq!(rest<'a>: &'a Token => Type = Token::SRArrow(_)
-                             , t <= ! main
-                             , {
+                                     , t <= ! main
+                                     , {
         t
     });
     seq!(main<'a>: &'a Token => Type = t <= atomic
-                             , r <= ? rest
-                             , {
+                                     , r <= ? rest
+                                     , {
         if let Some(r) = r {
             let ameta = AMeta { token_meta: vec![] };
             Type::Arrow { meta: ameta, src: Box::new(t), dest: Box::new(r) }
