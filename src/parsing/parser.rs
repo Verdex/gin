@@ -28,6 +28,7 @@ group!(parse_type: Token => Type = |input| {
         Type::Index(ameta, name.symbol_name(), Box::new(indexee))
     });
 
+
     // TODO:  need to fix left recursion issue here
     seq!(arrow: Token => Type = src <= main
                               , a <= Token::SRArrow(_)
@@ -39,10 +40,20 @@ group!(parse_type: Token => Type = |input| {
         Type::Arrow{ src, dest }
     });
 
-    alt!(main: Token => Type = index
-                             | generic 
-                             | concrete
-                             );
+    seq!(paren: Token => Type = Token::LParen(_)
+                              , t <= main
+                              , ! Token::RParen(_)
+                              , {
+        t
+    });
+
+    alt!(atomic: Token => Type = paren
+                               | index
+                               | generic 
+                               | concrete
+                               );
+
+    seq!(main: Token => Type = );
 
     main(input)
 });
