@@ -12,7 +12,7 @@ group!(parse_type: Token => Type = |input| {
     seq!(concrete: Token => Type = name <= Token::UpperSymbol(_, _), {
         if let Token::UpperSymbol(meta, name) = name {
             let ameta = AMeta { token_meta: vec![meta] };
-            Type::ConcreteType(ameta, name)
+            Type::Concrete(ameta, name)
         }
         else {
             panic!("Expected UpperSymbol");
@@ -22,7 +22,7 @@ group!(parse_type: Token => Type = |input| {
     seq!(generic: Token => Type = name <= Token::LowerSymbol(_, _), {
         if let Token::LowerSymbol(meta, name) = name {
             let ameta = AMeta { token_meta: vec![meta] };
-            Type::ConcreteType(ameta, name)
+            Type::Generic(ameta, name)
         }
         else {
             panic!("Expected LowerSymbol");
