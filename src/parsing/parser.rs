@@ -36,10 +36,10 @@ group!(parse_type<'a>: &'a Token => Type = |input| {
     });
 
     alt!(atomic<'a>: &'a Token => Type = paren
-                               | index
-                               | generic 
-                               | concrete
-                               );
+                                       | index
+                                       | generic 
+                                       | concrete
+                                       );
 
     seq!(rest<'a>: &'a Token => Type = Token::SRArrow(_)
                              , t <= ! main
