@@ -1,5 +1,5 @@
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct TMeta {
     pub start : usize,
     pub end : usize,
@@ -21,6 +21,35 @@ pub enum Token {
     DRArrow(TMeta),
     Colon(TMeta),
     Dot(TMeta),
+}
+
+impl Token {
+    pub fn meta(&self) -> TMeta {
+        match self {
+            Token::LowerSymbol(m, _) => *m,
+            Token::UpperSymbol(m, _) => *m,
+            Token::Number(m, _) => *m,
+            Token::String(m, _) => *m,
+            Token::RParen(m) => *m,
+            Token::LParen(m) => *m,
+            Token::LAngle(m) => *m,
+            Token::RAngle(m) => *m,
+            Token::SLArrow(m) => *m,
+            Token::SRArrow(m) => *m,
+            Token::DLArrow(m) => *m,
+            Token::DRArrow(m) => *m,
+            Token::Colon(m) => *m,
+            Token::Dot(m) => *m,
+        }
+    }
+
+    pub fn symbol_name(&self) -> String {
+        match self {
+            Token::LowerSymbol(_, name) => name.into(),
+            Token::UpperSymbol(_, name) => name.into(),
+            _ => panic!("symbol_name called on non-symbol"),
+        }
+    }
 }
 
 #[derive(Debug)]
