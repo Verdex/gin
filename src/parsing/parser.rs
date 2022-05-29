@@ -24,10 +24,20 @@ group!(parse_type: Token => Type = |input| {
                               , indexee <= ! main
                               , r <= ! Token::RAngle(_) 
                               , {
-
         let ameta = AMeta { token_meta: vec![name.meta(), l.meta(), r.meta()]};
         Type::Index(ameta, name.symbol_name(), Box::new(indexee))
-    } );
+    });
+
+    // TODO:  need to fix left recursion issue here
+    seq!(arrow: Token => Type = src <= main
+                              , a <= Token::SRArrow(_)
+                              , dest <= ! main
+                              , {
+        let ameta = AMeta { token_meta: vec![a.meta()] };
+        let src = Box::new(src);
+        let dest = Box::new(dest);
+        Type::Arrow{ src, dest }
+    });
 
     alt!(main: Token => Type = index
                              | generic 
