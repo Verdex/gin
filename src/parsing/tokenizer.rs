@@ -201,25 +201,35 @@ group!(number: (usize, char) => I = |input| {
 });
 
 group!(punctuation: (usize, char) => I = |input| {
-    seq!(single: (usize, char) => I = p <= (_, '(')
-                                           | (_, ')')
-                                           | (_, '.')
-                                           | (_, ':')
-                                           | (_, '<')
-                                           | (_, '>'), {
-        I::T(Token::Punct(TMeta { start: p.0, end: p.0 }, p.1.into()))
-    });
+    fn m(x : (usize, char)) -> TMeta {
+        TMeta { start: x.0, end: x.0 }
+    }
+    seq!(l_angle: (usize, char) => I = p <= (_, '<'), { I::T(Token::LAngle(m(p))) });
+    seq!(r_angle: (usize, char) => I = p <= (_, '>'), { I::T(Token::RAngle(m(p))) });
+    seq!(l_paren: (usize, char) => I = p <= (_, '('), { I::T(Token::LParen(m(p))) });
+    seq!(r_paren: (usize, char) => I = p <= (_, '('), { I::T(Token::RParen(m(p))) });
+    seq!(colon: (usize, char) => I = p <= (_, ':'), { I::T(Token::Colon(m(p))) });
+    seq!(dot: (usize, char) => I = p <= (_, '.'), { I::T(Token::Dot(m(p))) });
+
+    alt!(single: (usize, char) => I = l_paren
+                                    | r_paren
+                                    | colon
+                                    | dot
+                                    | l_angle
+                                    | r_angle
+                                    );
+
     seq!(single_left_arrow: (usize, char) => I = _1 <= (_, '<'), _2 <= (_, '-'), {
-        I::T(Token::Punct(TMeta { start: _1.0, end: _2.0 }, "<-".into()))
+        I::T(Token::SLArrow(TMeta { start: _1.0, end: _2.0 }))
     });
     seq!(double_left_arrow: (usize, char) => I = _1 <= (_, '<'), _2 <= (_, '='), {
-        I::T(Token::Punct(TMeta { start: _1.0, end: _2.0 }, "<=".into()))
+        I::T(Token::DLArrow(TMeta { start: _1.0, end: _2.0 }))
     });
     seq!(single_right_arrow: (usize, char) => I = _1 <= (_, '-'), _2 <= (_, '>'), {
-        I::T(Token::Punct(TMeta { start: _1.0, end: _2.0 }, "<-".into()))
+        I::T(Token::SRArrow(TMeta { start: _1.0, end: _2.0 }))
     });
     seq!(double_right_arrow: (usize, char) => I = _1 <= (_, '='), _2 <= (_, '>'), {
-        I::T(Token::Punct(TMeta { start: _1.0, end: _2.0 }, "<=".into()))
+        I::T(Token::DRArrow(TMeta { start: _1.0, end: _2.0 }))
     });
     alt!(main: (usize, char) => I = single_left_arrow
                                   | double_left_arrow
@@ -242,14 +252,13 @@ mod test {
 
         assert_eq!( output.len(), 1 );
 
-        let (start, end, value) = match &output[0] {
-            I::T(Token::Punct(m, n)) => (m.start, m.end, n.clone()),
+        let (start, end) = match &output[0] {
+            I::T(Token::RAngle(m)) => (m.start, m.end),
             _ => panic!("not punctuation"),
         };
 
         assert_eq!( start, 0 );
         assert_eq!( end, 0 );
-        assert_eq!( value, ">" );
         
         Ok(())
     }
@@ -261,14 +270,13 @@ mod test {
 
         assert_eq!( output.len(), 1 );
 
-        let (start, end, value) = match &output[0] {
-            I::T(Token::Punct(m, n)) => (m.start, m.end, n.clone()),
+        let (start, end) = match &output[0] {
+            I::T(Token::LAngle(m)) => (m.start, m.end),
             _ => panic!("not punctuation"),
         };
 
         assert_eq!( start, 0 );
         assert_eq!( end, 0 );
-        assert_eq!( value, "<" );
         
         Ok(())
     }
@@ -280,14 +288,13 @@ mod test {
 
         assert_eq!( output.len(), 1 );
 
-        let (start, end, value) = match &output[0] {
-            I::T(Token::Punct(m, n)) => (m.start, m.end, n.clone()),
+        let (start, end) = match &output[0] {
+            I::T(Token::DLArrow(m)) => (m.start, m.end),
             _ => panic!("not punctuation"),
         };
 
         assert_eq!( start, 0 );
         assert_eq!( end, 1 );
-        assert_eq!( value, "<=" );
         
         Ok(())
     }
@@ -299,14 +306,13 @@ mod test {
 
         assert_eq!( output.len(), 1 );
 
-        let (start, end, value) = match &output[0] {
-            I::T(Token::Punct(m, n)) => (m.start, m.end, n.clone()),
+        let (start, end) = match &output[0] {
+            I::T(Token::SLArrow(m)) => (m.start, m.end),
             _ => panic!("not punctuation"),
         };
 
         assert_eq!( start, 0 );
         assert_eq!( end, 1 );
-        assert_eq!( value, "<-" );
         
         Ok(())
     }
