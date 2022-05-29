@@ -207,7 +207,7 @@ group!(punctuation: (usize, char) => I = |input| {
     seq!(l_angle: (usize, char) => I = p <= (_, '<'), { I::T(Token::LAngle(m(p))) });
     seq!(r_angle: (usize, char) => I = p <= (_, '>'), { I::T(Token::RAngle(m(p))) });
     seq!(l_paren: (usize, char) => I = p <= (_, '('), { I::T(Token::LParen(m(p))) });
-    seq!(r_paren: (usize, char) => I = p <= (_, '('), { I::T(Token::RParen(m(p))) });
+    seq!(r_paren: (usize, char) => I = p <= (_, ')'), { I::T(Token::RParen(m(p))) });
     seq!(colon: (usize, char) => I = p <= (_, ':'), { I::T(Token::Colon(m(p))) });
     seq!(dot: (usize, char) => I = p <= (_, '.'), { I::T(Token::Dot(m(p))) });
 
