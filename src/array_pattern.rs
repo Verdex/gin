@@ -292,6 +292,32 @@ mod test {
     use super::*;
 
     #[test]
+    fn seq_should_return_unused_symbol() {
+        seq!(main: u8 = 0x01, 0x02, { 0x01 });
+
+        let v : Vec<u8> = vec![0x01, 0x03];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i);
+        assert!( matches!( o, Err(MatchError::Error(1))) );
+
+        assert_eq!( i.next(), Some((0, 0x01)) );
+    }
+
+    #[test]
+    fn seq_with_maybe_should_return_unused_symbol() {
+        seq!(main: u8 = ? 0x01, 0x02, { 0x01 });
+
+        let v : Vec<u8> = vec![0x01, 0x03];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i);
+        assert!( matches!( o, Err(MatchError::Error(1))) );
+
+        assert_eq!( i.next(), Some((0, 0x01)) );
+    }
+
+    #[test]
     fn group_should_match() -> Result<(), MatchError> {
         group!(main: u8 = |input| {
             seq!(a: u8 = x <= _, y <= 0x01, { x + y });

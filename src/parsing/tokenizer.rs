@@ -24,6 +24,7 @@ pub fn tokenize( input : &str ) -> Result<Vec<Token>, String> {
     }
 }
 
+#[derive(Debug)]
 enum I {
     T(Token),
     Junk,
@@ -244,6 +245,24 @@ group!(punctuation: (usize, char) => I = |input| {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn should_parse_single_right_arrow() -> Result<(), MatchError> {
+        let input = r#"->"#;
+        let output = internal_tokenize(input)?;
+
+        assert_eq!( output.len(), 1 );
+
+        let (start, end) = match &output[0] {
+            I::T(Token::SRArrow(m)) => (m.start, m.end),
+            x => panic!("found unexpected: {:?}", x),
+        };
+
+        assert_eq!( start, 0 );
+        assert_eq!( end, 1 );
+        
+        Ok(())
+    }
 
     #[test]
     fn should_parse_right_angle() -> Result<(), MatchError> {
