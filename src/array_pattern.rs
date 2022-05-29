@@ -342,27 +342,8 @@ mod test {
 
             seq!(main: (usize, char) => Token = sign <= ? (_, '+') | (_, '-')
                                         , d <= digit
-                                        , ds <= * digit
                                         , {
-                let start = match sign {
-                    Some(x) => x.0,
-                    None => d.0,
-                };
-                let end = {
-                    let mut ret = d.0;
-                    match ds.last() {
-                        Some(x) => ret = x.0,
-                        None => { },
-                    }
-                    ret
-                };
-                let meta = TMeta { start, end };
-                let n = format!("{}{}{}"
-                            , m(sign)
-                            , d.1
-                            , ds.into_iter().map(|x| x.1).collect::<String>());
-                let ret = n.parse::<f64>().expect("allowed number string that rust fails to parse with parse::<f64>()");
-                Token::Number(meta, ret)
+                Token::Number(TMeta{ start: 0, end: 0}, 0.0)
             });
 
             main(input)
