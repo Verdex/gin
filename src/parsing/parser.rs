@@ -87,7 +87,28 @@ mod test {
         };
     }
 
-    test_type!(blarg: "a" => Type::Generic(_, _));
+    test_type!(should_parse_generic: "a" => Type::Generic(_, n) => { assert_eq!(n, "a"); });
+    test_type!(should_parse_concrete: "A" => Type::Concrete(_, n) => { assert_eq!(n, "A"); });
+    test_type!(should_parse_paren_generic: "(a)" => Type::Generic(_, n) => { assert_eq!(n, "a"); });
+    test_type!(should_parse_paren_concrete: "(A)" => Type::Concrete(_, n) => { assert_eq!(n, "A"); });
+    test_type!(should_parse_index: "Blah<a>" => Type::Index(_, n, g) => {
+        assert_eq!( n, "Blah" );
+        if let Type::Generic(_, g_n) = *g {
+            assert_eq!( g_n, "a" );
+        }
+        else {
+            panic!("expected generic as indexer");
+        }
+    });
+    test_type!(should_parse_simple_arrow: "a -> b" => Type::Arrow { src, dest, .. } => {
+        if let (Type::Generic(_, src), Type::Generic(_, dest)) = (*src, *dest) {
+            assert_eq!(src, "a");
+            assert_eq!(dest, "b");
+        }
+        else {
+            panic!("src and dest should be generic types");
+        }
+    });
 
 }
 
