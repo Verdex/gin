@@ -292,6 +292,63 @@ mod test {
     use super::*;
 
     #[test]
+    fn group_with_maybe_should_return_unused_symbol() {
+        group!(x: u8 = |input| {
+            seq!(a: u8 = ? 0x01, 0x02, { 0x01 });
+
+            a(input)
+        });
+        let v : Vec<u8> = vec![0x01, 0x03];
+        let mut i = v.into_iter().enumerate();
+
+        let o = x(&mut i);
+        assert!( matches!( o, Err(MatchError::Error(1))) );
+
+        assert_eq!( i.next(), Some((0, 0x01)) );
+    }
+
+    #[test]
+    fn alt_with_maybe_should_pass_on_unused_symbol() {
+        seq!(a: u8 = ? 0x01, 0x02, { 0x01 });
+        seq!(b: u8 = 0x01, 0x03, { 0x02 });
+        alt!(main: u8 = a | b);
+
+        let v : Vec<u8> = vec![0x01, 0x03];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i);
+        assert!( matches!( o, Ok(0x02) ) );
+    }
+
+    #[test]
+    fn alt_with_maybe_should_return_unused_symbol() {
+        seq!(a: u8 = ? 0x01, 0x02, { 0x01 });
+        alt!(main: u8 = a);
+
+        let v : Vec<u8> = vec![0x01, 0x03];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i);
+        assert!( matches!( o, Err(MatchError::Error(1))) );
+
+        assert_eq!( i.next(), Some((0, 0x01)) );
+    }
+
+    #[test]
+    fn alt_should_return_unused_symbol() {
+        seq!(a: u8 = 0x01, 0x02, { 0x01 });
+        alt!(main: u8 = a);
+
+        let v : Vec<u8> = vec![0x01, 0x03];
+        let mut i = v.into_iter().enumerate();
+
+        let o = main(&mut i);
+        assert!( matches!( o, Err(MatchError::Error(1))) );
+
+        assert_eq!( i.next(), Some((0, 0x01)) );
+    }
+
+    #[test]
     fn seq_should_return_unused_symbol() {
         seq!(main: u8 = 0x01, 0x02, { 0x01 });
 
