@@ -301,43 +301,22 @@ mod test {
         #[derive(Debug)]
         enum Token {
             Number(TMeta, f64),
-            LAngle(TMeta),
             RAngle(TMeta),
-            SLArrow(TMeta),
             SRArrow(TMeta),
-            DLArrow(TMeta),
-            DRArrow(TMeta),
         }
 
         group!(punctuation: (usize, char) => Token = |input| {
             fn m(x : (usize, char)) -> TMeta {
                 TMeta { start: x.0, end: x.0 }
             }
-            seq!(l_angle: (usize, char) => Token = p <= (_, '<'), { Token::LAngle(m(p)) });
             seq!(r_angle: (usize, char) => Token = p <= (_, '>'), { Token::RAngle(m(p)) });
 
-            alt!(single: (usize, char) => Token = 
-                                             l_angle
-                                            | r_angle
-                                            );
-
-            seq!(single_left_arrow: (usize, char) => Token = _1 <= (_, '<'), _2 <= (_, '-'), {
-                Token::SLArrow(TMeta { start: _1.0, end: _2.0 })
-            });
-            seq!(double_left_arrow: (usize, char) => Token = _1 <= (_, '<'), _2 <= (_, '='), {
-                Token::DLArrow(TMeta { start: _1.0, end: _2.0 })
-            });
             seq!(single_right_arrow: (usize, char) => Token = _1 <= (_, '-'), _2 <= (_, '>'), {
                 Token::SRArrow(TMeta { start: _1.0, end: _2.0 })
             });
-            seq!(double_right_arrow: (usize, char) => Token = _1 <= (_, '='), _2 <= (_, '>'), {
-                Token::DRArrow(TMeta { start: _1.0, end: _2.0 })
-            });
-            alt!(main: (usize, char) => Token = single_left_arrow
-                                        | double_left_arrow
-                                        | single_right_arrow
-                                        | double_right_arrow
-                                        | single );
+            alt!(main: (usize, char) => Token = 
+                                         single_right_arrow
+                                        | r_angle );
 
             main(input)
         });
