@@ -21,11 +21,11 @@ group!(parse_type<'a>: &'a Token => Type = |input| {
 
     seq!(index<'a>: &'a Token => Type = name <= Token::UpperSymbol(_, _)
                               , l <= Token::LAngle(_) 
-                              , indexee <= ! main
+                              , indexer <= ! main
                               , r <= ! Token::RAngle(_) 
                               , {
         let ameta = AMeta { token_meta: vec![name.meta(), l.meta(), r.meta()]};
-        Type::Index(ameta, name.symbol_name(), Box::new(indexee))
+        Type::Index(ameta, name.symbol_name(), Box::new(indexer))
     });
 
     seq!(paren<'a>: &'a Token => Type = Token::LParen(_)
