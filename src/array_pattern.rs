@@ -293,26 +293,26 @@ mod test {
 
     #[test]
     fn blarg() -> Result<(), MatchError> {
-        group!(number: (usize, char) = |input| { 
-            pred!(digit: (usize, char) = |c| c.1.is_digit(10));
+        group!(number: char = |input| { 
+            pred!(digit: char = |c| c.is_digit(10));
 
-            seq!(main: (usize, char) = sign <= ? (_, '+') | (_, '-')
+            seq!(main: char = sign <= ? '+' | '-'
                                         , d <= digit
                                         , {
-                (0, '0')
+                '0'
             });
 
             main(input)
         });
 
         let input = "->";
-        let mut x = input.char_indices().enumerate();
+        let mut x = input.char_indices();
 
         let output = number(&mut x);
 
         assert!( matches!( output, Err(_) ) );
 
-        assert_eq!( x.next(), Some((0, (0, '-'))));
+        assert_eq!( x.next(), Some((0, '-')));
 
         Ok(())
     }
