@@ -293,85 +293,27 @@ mod test {
 
     #[test]
     fn blarg() -> Result<(), MatchError> {
-        #[derive(Debug)]
-        struct TMeta {
-            pub start : usize,
-            pub end : usize,
-        }
-        #[derive(Debug)]
-        enum Token {
-            Number(TMeta, f64),
-            RAngle(TMeta),
-            SRArrow(TMeta),
-        }
-
-        group!(punctuation: (usize, char) => Token = |input| {
-            fn m(x : (usize, char)) -> TMeta {
-                TMeta { start: x.0, end: x.0 }
-            }
-            seq!(r_angle: (usize, char) => Token = p <= (_, '>'), { Token::RAngle(m(p)) });
-
-            seq!(single_right_arrow: (usize, char) => Token = _1 <= (_, '-'), _2 <= (_, '>'), {
-                Token::SRArrow(TMeta { start: _1.0, end: _2.0 })
-            });
-            alt!(main: (usize, char) => Token = 
-                                         single_right_arrow
-                                        | r_angle );
-
-            main(input)
-        });
-
-
-        group!(number: (usize, char) => Token = |input| { 
-            fn m<T : Into<String>>(input : Option<(usize, T)>) -> String {
-                match input { 
-                    Some((_, x)) => x.into(),
-                    None => "".into()
-                }
-            }
-
+        group!(number: (usize, char) = |input| { 
             pred!(digit: (usize, char) = |c| c.1.is_digit(10));
 
-            seq!(decimal: (usize, char) => (usize, String) = (_, '.'), d <= ! digit, ds <= * digit, {
-                let end = match ds.last() {
-                    Some(x) => x.0,
-                    None => d.0,
-                };
-                (end, format!("{}{}", d.1, ds.into_iter().map(|x| x.1).collect::<String>()))
-            });
-
-            seq!(main: (usize, char) => Token = sign <= ? (_, '+') | (_, '-')
+            seq!(main: (usize, char) = sign <= ? (_, '+') | (_, '-')
                                         , d <= digit
                                         , {
-                Token::Number(TMeta{ start: 0, end: 0}, 0.0)
+                (0, '0')
             });
 
             main(input)
         });
-        
-        fn h(input : &str) -> Result<Vec<Token>, MatchError> {
-            alt!( token: (usize, char) => Token = number
-                                            | punctuation
-                                            );
 
+        let input = "->";
+        let mut x = input.char_indices().enumerate();
 
-            let mut x = input.char_indices().enumerate();
+        let output = number(&mut x);
 
-            let mut ret = vec![];
-            loop {
-                match token(&mut x) {
-                    Ok(t) => ret.push(t),
-                    Err(MatchError::ErrorEndOfFile) => break,
-                    Err(e) => return Err(e),
-                }
-            }
+        assert!( matches!( output, Err(_) ) );
 
-            Ok(ret)
-        }
+        assert_eq!( x.next(), Some((0, (0, '-'))));
 
-        let output = h("->")?;
-
-        assert!( matches!( output[0], Token::SRArrow(_) ), "{:?}", output[0] );
         Ok(())
     }
 
