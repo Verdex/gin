@@ -76,7 +76,7 @@ mod test {
                         $x
                     }
                     else {
-                        panic!("expected pattern not found: {:?}\nfrom tokens: {:?}", output, tokens);
+                        panic!("instead of expected pattern found: {:?}\nfrom tokens: {:?}", output, tokens);
                     }
                     Ok(())
                 }
