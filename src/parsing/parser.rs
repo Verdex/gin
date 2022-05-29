@@ -28,18 +28,6 @@ group!(parse_type: Token => Type = |input| {
         Type::Index(ameta, name.symbol_name(), Box::new(indexee))
     });
 
-
-    // TODO:  need to fix left recursion issue here
-    seq!(arrow: Token => Type = src <= main
-                              , a <= Token::SRArrow(_)
-                              , dest <= ! main
-                              , {
-        let ameta = AMeta { token_meta: vec![a.meta()] };
-        let src = Box::new(src);
-        let dest = Box::new(dest);
-        Type::Arrow{ src, dest }
-    });
-
     seq!(paren: Token => Type = Token::LParen(_)
                               , t <= main
                               , ! Token::RParen(_)
@@ -53,7 +41,22 @@ group!(parse_type: Token => Type = |input| {
                                | concrete
                                );
 
-    seq!(main: Token => Type = );
+    seq!(rest: Token => Type = Token::SRArrow(_)
+                             , t <= ! main
+                             , {
+        t
+    });
+    seq!(main: Token => Type = t <= atomic
+                             , r <= ? rest
+                             , {
+        if let Some(r) = r {
+            let ameta = AMeta { token_meta: vec![] };
+            Type::Arrow { meta: ameta, src: Box::new(t), dest: Box::new(r) }
+        }
+        else {
+            t
+        }
+    });
 
     main(input)
 });
