@@ -10,23 +10,13 @@ pub fn parse(tokens : Vec<Token>) -> Result<(), String> {
 
 group!(parse_type: Token => Type = |input| {
     seq!(concrete: Token => Type = name <= Token::UpperSymbol(_, _), {
-        if let Token::UpperSymbol(meta, name) = name {
-            let ameta = AMeta { token_meta: vec![meta] };
-            Type::Concrete(ameta, name)
-        }
-        else {
-            panic!("Expected UpperSymbol");
-        }
+        let ameta = AMeta { token_meta: vec![name.meta()] };
+        Type::Concrete(ameta, name.symbol_name())
     });
 
     seq!(generic: Token => Type = name <= Token::LowerSymbol(_, _), {
-        if let Token::LowerSymbol(meta, name) = name {
-            let ameta = AMeta { token_meta: vec![meta] };
-            Type::Generic(ameta, name)
-        }
-        else {
-            panic!("Expected LowerSymbol");
-        }
+        let ameta = AMeta { token_meta: vec![name.meta()] };
+        Type::Generic(ameta, name.symbol_name())
     });
 
     seq!(index: Token => Type = name <= Token::UpperSymbol(_, _)
@@ -35,16 +25,8 @@ group!(parse_type: Token => Type = |input| {
                               , r <= ! Token::RAngle(_) 
                               , {
 
-        if let ( Token::UpperSymbol(name_meta, name)
-               , Token::LAngle(l_meta)
-               , Token::RAngle(r_meta)
-               ) = (name, l, r) {
-            let ameta = AMeta { token_meta: vec![name_meta, l_meta, r_meta]};
-            Type::Index(ameta, name, Box::new(indexee))
-        }
-        else {
-            panic!("Unexpected cases");
-        }
+        let ameta = AMeta { token_meta: vec![name.meta(), l.meta(), r.meta()]};
+        Type::Index(ameta, name.symbol_name(), Box::new(indexee))
     } );
 
     alt!(main: Token => Type = index
