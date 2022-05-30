@@ -307,7 +307,7 @@ mod test {
 
         assert!( matches!( output, Err(_) ) );
 
-        assert_eq!( x.next(), Some((0, 0x00)));
+        assert_eq!( x.next(), Some((0, 0x00)) );
 
         Ok(())
     }
