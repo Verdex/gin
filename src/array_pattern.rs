@@ -292,27 +292,22 @@ mod test {
     use super::*;
 
     #[test]
-    fn blarg() -> Result<(), MatchError> {
-        group!(number: char = |input| { 
-            pred!(digit: char = |c| c.is_digit(10));
-
-            seq!(main: char = sign <= ? '+' | '-'
-                                        , d <= digit
-                                        , {
-                '0'
-            });
-
-            main(input)
+    fn pred_should_reset_input_on_failure() -> Result<(), MatchError> {
+        pred!(fail: u8 = |c| false);
+        seq!(main: u8 = ? 0x00 
+                        , fail 
+                        , {
+            0x00
         });
 
-        let input = "->";
-        let mut x = input.char_indices();
+        let input = vec![0x00, 0x01];
+        let mut x = input.into_iter().enumerate();
 
-        let output = number(&mut x);
+        let output = main(&mut x);
 
         assert!( matches!( output, Err(_) ) );
 
-        assert_eq!( x.next(), Some((0, '-')));
+        assert_eq!( x.next(), Some((0, 0x00)));
 
         Ok(())
     }
