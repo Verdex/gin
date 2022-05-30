@@ -114,7 +114,25 @@ macro_rules! pred {
 macro_rules! cases {
     // ident <= ident 
     ($input:ident, $rp:ident, $n:ident <= $matcher:ident, $($rest:tt)*) => {
-        let $n = $matcher($input)?;
+        let $n = match $matcher($input) {
+            Ok(v) => v,
+            Err(MatchError::Error(i)) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::Error(i));
+            },
+            Err(MatchError::ErrorEndOfFile) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::ErrorEndOfFile);
+            },
+            Err(MatchError::Fatal(i)) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::Fatal(i));
+            },
+            Err(MatchError::FatalEndOfFile) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::FatalEndOfFile);
+            },
+        };
         cases!($input, $rp, $($rest)*);
     };
     ($input:ident, $rp:ident, $n:ident <= ? $matcher:ident, $($rest:tt)*) => {
@@ -122,9 +140,15 @@ macro_rules! cases {
         let $n = match $matcher($input) {
             Ok(v) => Some(v),
             Err(MatchError::Error(_)) => None,
-            Err(MatchError::ErrorEndOfFile) => None, 
-            Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
-            Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+            Err(MatchError::ErrorEndOfFile) => None,
+            Err(MatchError::Fatal(i)) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::Fatal(i))
+            },
+            Err(MatchError::FatalEndOfFile) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::FatalEndOfFile);
+            },
         };
         cases!($input, $rp, $($rest)*);
     };
@@ -143,8 +167,14 @@ macro_rules! cases {
                     std::mem::swap(&mut peek, $input); 
                     break;
                 },
-                Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
-                Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+                Err(MatchError::Fatal(i)) => {
+                    std::mem::swap(&mut peek, $input); 
+                    return Err(MatchError::Fatal(i));
+                },
+                Err(MatchError::FatalEndOfFile) => {
+                    std::mem::swap(&mut peek, $input); 
+                    return Err(MatchError::FatalEndOfFile)
+                },
             }
 
         }
@@ -155,10 +185,22 @@ macro_rules! cases {
         #[allow(unreachable_patterns)]
         let $n = match $matcher($input) {
             Ok(v) => v,
-            Err(MatchError::Error(i)) => return Err(MatchError::Fatal(i)),
-            Err(MatchError::ErrorEndOfFile) => return Err(MatchError::FatalEndOfFile), 
-            Err(MatchError::Fatal(i)) => return Err(MatchError::Fatal(i)),
-            Err(MatchError::FatalEndOfFile) => return Err(MatchError::FatalEndOfFile),
+            Err(MatchError::Error(i)) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::Fatal(i));
+            },
+            Err(MatchError::ErrorEndOfFile) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::FatalEndOfFile);
+            },
+            Err(MatchError::Fatal(i)) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::Fatal(i));
+            },
+            Err(MatchError::FatalEndOfFile) => {
+                std::mem::swap(&mut $rp, $input); 
+                return Err(MatchError::FatalEndOfFile);
+            },
         };
         cases!($input, $rp, $($rest)*);
     };
@@ -292,8 +334,8 @@ mod test {
     use super::*;
 
     #[test]
-    fn seq_should_reset_input_on_pred_failure() -> Result<(), MatchError> {
-        pred!(fail: u8 = |c| false);
+    fn seq_should_reset_input_on_call_failure() -> Result<(), MatchError> {
+        seq!(fail: u8 = 0xFF, { 0x00 });
         seq!(main: u8 = 0x00 
                       , fail 
                       , {
