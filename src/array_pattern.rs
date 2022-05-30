@@ -292,7 +292,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn pred_should_reset_input_on_failure() -> Result<(), MatchError> {
+    fn seq_should_reset_input_from_failed_maybe_on_pred_failure() -> Result<(), MatchError> {
         pred!(fail: u8 = |c| false);
         seq!(main: u8 = ? 0x00 
                         , fail 
