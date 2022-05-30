@@ -109,6 +109,25 @@ mod test {
             panic!("src and dest should be generic types");
         }
     });
-
+    test_type!(should_parse_arrow_arrow: "a -> b -> c" => Type::Arrow { src, dest, .. } => {
+        if let Type::Generic(_, src) = *src {
+            assert_eq!(src, "a");
+        }
+        else {
+            panic!("Arrow source incorrect");
+        }
+        if let Type::Arrow { src, dest, .. } = *dest {
+            if let (Type::Generic(_, dest_src), Type::Generic(_, dest_dest)) = (*src, *dest) {
+                assert_eq!( dest_src, "b");
+                assert_eq!( dest_dest, "c");
+            }
+            else {
+                panic!("Arrow Dest incorrect");
+            }
+        }
+        else {
+            panic!("Dest should be arrow type");
+        }
+    });
 }
 
