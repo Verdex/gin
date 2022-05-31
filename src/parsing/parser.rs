@@ -149,5 +149,12 @@ mod test {
             panic!("Arrow dest incorrect");
         }
     });
+    test_type!(should_parse_arrow_in_index: "Blah<a -> b>" => Type::Index(_, _, arrow) => { 
+        assert!( matches!( *arrow, Type::Arrow{ .. } ) );
+    });
+    test_type!(should_parse_index_in_arrow: "Blah<a> -> Blah<b>" => Type::Arrow { src, dest, .. } => {
+        assert!( matches!( *src, Type::Index(_, _, _) ) );
+        assert!( matches!( *dest, Type::Index(_, _, _) ) );
+    });
 }
 
