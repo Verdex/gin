@@ -23,6 +23,7 @@ pub enum Token {
     DRArrow(TMeta),
     Colon(TMeta),
     Dot(TMeta),
+    Comma(TMeta),
 }
 
 impl Token {
@@ -44,6 +45,7 @@ impl Token {
             Token::DRArrow(m) => *m,
             Token::Colon(m) => *m,
             Token::Dot(m) => *m,
+            Token::Comma(m) => *m,
         }
     }
 
