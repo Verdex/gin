@@ -1,12 +1,83 @@
 
 use crate::{alt, group, pred, seq, cases};
 use crate::array_pattern::MatchError;
-use crate::data::{TMeta, Token, AMeta, Type};
+use crate::data::{ TMeta 
+                 , Token
+                 , AMeta
+                 , Type
+                 , ConsDef
+                 , ConsCase
+                 };
 
 pub fn parse(tokens : Vec<Token>) -> Result<(), String> {
 
     Err("TODO".into())
 }
+
+group!(parse_cons_def<'a>: &'a Token => ConsDef = |input| {
+    seq!(comma_type<'a>: &'a Token => Type = Token::Comma(_), t <= ! parse_type, { t });
+    seq!(type_list<'a>: &'a Token => Vec<Type> = Token::LParen(_)
+                                               , _1 <= ! parse_type
+                                               , r <= * comma_type
+                                               , ! Token::RParen(_)
+                                               , {
+        let mut rest = r;
+        rest.insert(0, _1);
+        rest
+    });
+    seq!(comma_sym<'a>: &'a Token => String = Token::Comma(_), s <= ! Token::LowerSymbol(_, _), {
+        s.symbol_name()
+    });
+    seq!(generic_list<'a>: &'a Token => Vec<String> = Token::LAngle(_)
+                                                    , _1 <= ! Token::LowerSymbol(_, _)
+                                                    , r <= * comma_sym
+                                                    , ! Token::RAngle(_)
+                                                    , {
+        let mut rest = r;
+        rest.insert(0, _1.symbol_name());
+        rest
+    });
+    seq!(cons<'a>: &'a Token => ConsCase = name <= Token::UpperSymbol(_, _), params <= ? type_list, {
+        let meta = AMeta { token_meta : vec![] };
+        let params = match params {
+            Some(v) => v,
+            None => vec![],
+        };
+        ConsCase::Position { meta, name: name.symbol_name(), params }
+    });
+    seq!(comma_cons<'a>: &'a Token => ConsCase = Token::Comma(_), c <= ! cons, { c });
+    seq!(cons_list<'a>: &'a Token => Vec<ConsCase> = Token::LCurl(_)
+                                                   , _1 <= ! cons
+                                                   , r <= * comma_cons
+                                                   , ! Token::RCurl(_)
+                                                   , {
+        let mut rest = r;
+        rest.insert(0, _1);
+        rest
+    });
+    pred!(type_keyword<'a>: &'a Token => () = |x| matches!(x, Token::LowerSymbol(_, _)) && x.symbol_name() == "type" => { () });
+    seq!(main<'a>: &'a Token => ConsDef = type_keyword
+                                        , name <= ! Token::UpperSymbol(_, _)
+                                        , gs <= ? generic_list
+                                        , cs <= ? cons_list
+                                        , {
+        let meta = AMeta { token_meta: vec![] };
+        let type_params = match gs {
+            Some(v) => v,
+            None => vec![],
+        };
+        let cs = match cs { 
+            Some(v) => v,
+            None => vec![],
+        };
+        ConsDef { meta, name: name.symbol_name(), type_params, cons: cs }
+    });
+    /*type Blah[<a,+>] {
+        UpperSymbol,
+        UpperSymbol(Type,+),
+    }*/
+    main(input)
+});
 
 group!(parse_type<'a>: &'a Token => Type = |input| {
     seq!(concrete<'a>: &'a Token => Type = name <= Token::UpperSymbol(_, _), {
