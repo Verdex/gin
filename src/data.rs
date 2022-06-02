@@ -64,3 +64,15 @@ pub enum Type {
     Index(AMeta, String, Box<Type>),
     Arrow{ meta: AMeta, src: Box<Type>, dest: Box<Type> },
 }
+
+#[derive(Debug)]
+pub enum ConsCase {
+    Position { meta : AMeta, name : String, params : Vec<Type> },
+}
+
+#[derive(Debug)]
+pub struct ConsDef {
+    pub meta : AMeta,
+    pub name : String,
+    pub cons : Vec<ConsCase>,
+}
