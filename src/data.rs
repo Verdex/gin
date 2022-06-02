@@ -59,7 +59,7 @@ impl Token {
 }
 
 #[derive(Debug)]
-pub struct AMeta {
+pub struct AMeta { // TODO do we actually need AMeta ? ... it's going to be something like lookup token index and then figure out the start and end from the meta on that
     pub token_meta : Vec<TMeta>,
 }
 
