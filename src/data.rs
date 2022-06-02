@@ -78,5 +78,6 @@ pub enum ConsCase {
 pub struct ConsDef {
     pub meta : AMeta,
     pub name : String,
+    pub type_params : Vec<String>,
     pub cons : Vec<ConsCase>,
 }
