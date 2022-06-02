@@ -209,11 +209,15 @@ group!(punctuation: (usize, char) => I = |input| {
     seq!(r_angle: (usize, char) => I = p <= (_, '>'), { I::T(Token::RAngle(m(p))) });
     seq!(l_paren: (usize, char) => I = p <= (_, '('), { I::T(Token::LParen(m(p))) });
     seq!(r_paren: (usize, char) => I = p <= (_, ')'), { I::T(Token::RParen(m(p))) });
+    seq!(l_curl: (usize, char) => I = p <= (_, '{'), { I::T(Token::LCurl(m(p))) });
+    seq!(r_curl: (usize, char) => I = p <= (_, '}'), { I::T(Token::RCurl(m(p))) });
     seq!(colon: (usize, char) => I = p <= (_, ':'), { I::T(Token::Colon(m(p))) });
     seq!(dot: (usize, char) => I = p <= (_, '.'), { I::T(Token::Dot(m(p))) });
 
     alt!(single: (usize, char) => I = l_paren
                                     | r_paren
+                                    | l_curl
+                                    | r_curl
                                     | colon
                                     | dot
                                     | l_angle
