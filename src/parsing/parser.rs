@@ -151,6 +151,28 @@ group!(parse_type<'a>: &'a Token => Type = |input| {
 mod test {
     use super::*;
 
+    macro_rules! test_parse {
+        ($name:ident: $input:expr => $expected:pat => $x:block) => {
+            #[test]
+            fn $name() -> Result<(), MatchError> {
+                use super::super::tokenizer::tokenize;
+                if let Ok(tokens) = tokenize($input) {
+                    let output = internal_parse(&mut tokens.iter().enumerate())?;
+                    if let $expected = output {
+                        $x
+                    }
+                    else {
+                        panic!("instead of expected pattern found: {:?}\nfrom tokens: {:?}", output, tokens);
+                    }
+                    Ok(())
+                }
+                else {
+                    panic!( "tokenize failed in test parse" );
+                }
+            }
+        };
+    }
+
     macro_rules! test_type {
         ($name:ident: $input:expr => $expected:pat => $x:block) => {
             #[test]
