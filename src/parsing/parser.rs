@@ -13,7 +13,7 @@ pub fn parse(tokens : Vec<Token>) -> Result<Vec<Ast>, String> {
     Err("TODO".into())
 }
 
-fn internal_parse(tokens : Vec<Token>) -> Result<Vec<Ast>, MatchError> {
+fn internal_parse(tokens : &Vec<Token>) -> Result<Vec<Ast>, MatchError> {
     let mut x = tokens.iter().enumerate();
 
     alt!( ast<'a>: &'a Token => Ast = parse_cons_def);
@@ -31,6 +31,7 @@ fn internal_parse(tokens : Vec<Token>) -> Result<Vec<Ast>, MatchError> {
 }
 
 group!(parse_cons_def<'a>: &'a Token => Ast = |input| {
+    // TODO pretty sure the list stuff is going to be reused a bunch.  might be able to make a macro for it.
     seq!(comma_type<'a>: &'a Token => Type = Token::Comma(_), t <= ! parse_type, { t });
     seq!(type_list<'a>: &'a Token => Vec<Type> = Token::LParen(_)
                                                , _1 <= ! parse_type
@@ -87,6 +88,7 @@ group!(parse_cons_def<'a>: &'a Token => Ast = |input| {
         };
         Ast::ConsDef{ name: name.symbol_name(), type_params, cons: cs }
     });
+    // TODO:  clean up comment 
     /*type Blah[<a,+>] {
         UpperSymbol,
         UpperSymbol(Type,+),
@@ -151,14 +153,17 @@ group!(parse_type<'a>: &'a Token => Type = |input| {
 mod test {
     use super::*;
 
-    macro_rules! test_parse {
+    macro_rules! test_first_parse {
         ($name:ident: $input:expr => $expected:pat => $x:block) => {
             #[test]
             fn $name() -> Result<(), MatchError> {
                 use super::super::tokenizer::tokenize;
                 if let Ok(tokens) = tokenize($input) {
-                    let output = internal_parse(&mut tokens.iter().enumerate())?;
-                    if let $expected = output {
+                    let mut output = internal_parse(&tokens)?;
+
+                    assert_eq!( output.len(), 1 );
+
+                    if let Some($expected) = output.pop() {
                         $x
                     }
                     else {
@@ -264,5 +269,21 @@ mod test {
         assert!( matches!( *src, Type::Index(_, _, _) ) );
         assert!( matches!( *dest, Type::Index(_, _, _) ) );
     });
+
+    test_first_parse!(should_parse_enum_style_type: r#"
+        type Name { 
+            First,
+            Second,
+            Third
+        }"# 
+        
+        => Ast::ConsDef { name, type_params, cons }
+
+        => {
+
+            // TODO:  more
+    });
+
+    // TODO:  pretty sure trailing comma is a fatal parse.  check and then setup a maybe comma to the list parsers 
 }
 
