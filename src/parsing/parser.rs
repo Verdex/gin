@@ -5,16 +5,32 @@ use crate::data::{ TMeta
                  , Token
                  , AMeta
                  , Type
-                 , ConsDef
                  , ConsCase
+                 , Ast
                  };
 
-pub fn parse(tokens : Vec<Token>) -> Result<(), String> {
-
+pub fn parse(tokens : Vec<Token>) -> Result<Vec<Ast>, String> {
     Err("TODO".into())
 }
 
-group!(parse_cons_def<'a>: &'a Token => ConsDef = |input| {
+fn internal_parse(tokens : Vec<Token>) -> Result<Vec<Ast>, MatchError> {
+    let mut x = tokens.iter().enumerate();
+
+    alt!( ast<'a>: &'a Token => Ast = parse_cons_def);
+
+    let mut ret = vec![];
+    loop {
+        match ast(&mut x) {
+            Ok(t) => ret.push(t),
+            Err(MatchError::ErrorEndOfFile) => break,
+            Err(e) => return Err(e),
+        }
+    }
+
+    Ok(ret)
+}
+
+group!(parse_cons_def<'a>: &'a Token => Ast = |input| {
     seq!(comma_type<'a>: &'a Token => Type = Token::Comma(_), t <= ! parse_type, { t });
     seq!(type_list<'a>: &'a Token => Vec<Type> = Token::LParen(_)
                                                , _1 <= ! parse_type
@@ -56,12 +72,11 @@ group!(parse_cons_def<'a>: &'a Token => ConsDef = |input| {
         rest
     });
     pred!(type_keyword<'a>: &'a Token => () = |x| matches!(x, Token::LowerSymbol(_, _)) && x.symbol_name() == "type" => { () });
-    seq!(main<'a>: &'a Token => ConsDef = type_keyword
+    seq!(main<'a>: &'a Token => Ast = type_keyword
                                         , name <= ! Token::UpperSymbol(_, _)
                                         , gs <= ? generic_list
                                         , cs <= ? cons_list
                                         , {
-        let meta = AMeta { token_meta: vec![] };
         let type_params = match gs {
             Some(v) => v,
             None => vec![],
@@ -70,7 +85,7 @@ group!(parse_cons_def<'a>: &'a Token => ConsDef = |input| {
             Some(v) => v,
             None => vec![],
         };
-        ConsDef { meta, name: name.symbol_name(), type_params, cons: cs }
+        Ast::ConsDef{ name: name.symbol_name(), type_params, cons: cs }
     });
     /*type Blah[<a,+>] {
         UpperSymbol,

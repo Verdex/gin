@@ -77,9 +77,6 @@ pub enum ConsCase {
 }
 
 #[derive(Debug)]
-pub struct ConsDef {
-    pub meta : AMeta,
-    pub name : String,
-    pub type_params : Vec<String>,
-    pub cons : Vec<ConsCase>,
+pub enum Ast {
+    ConsDef { name : String, type_params : Vec<String>, cons : Vec<ConsCase> },
 }
