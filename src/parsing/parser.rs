@@ -30,12 +30,7 @@ fn internal_parse(tokens : &Vec<Token>) -> Result<Vec<Ast>, MatchError> {
     Ok(ret)
 }
 
-macro_rules! list {
-   () => {}; 
-}
-
 group!(parse_cons_def<'a>: &'a Token => Ast = |input| {
-    // TODO pretty sure the list stuff is going to be reused a bunch.  might be able to make a macro for it.
     seq!(comma_type<'a>: &'a Token => Type = Token::Comma(_), t <= ! parse_type, { t });
     seq!(type_list<'a>: &'a Token => Vec<Type> = Token::LParen(_)
                                                , _1 <= ! parse_type
@@ -66,15 +61,18 @@ group!(parse_cons_def<'a>: &'a Token => Ast = |input| {
         };
         ConsCase::Position { meta, name: name.symbol_name(), params }
     });
-    seq!(comma_cons<'a>: &'a Token => ConsCase = Token::Comma(_), c <= ! cons, { c });
+    seq!(cons_comma<'a>: &'a Token => ConsCase = c <= cons, Token::Comma(_), { c });
     seq!(cons_list<'a>: &'a Token => Vec<ConsCase> = Token::LCurl(_)
-                                                   , _1 <= ! cons
-                                                   , r <= * comma_cons
+                                                   , cs <= * cons_comma
+                                                   , l <= ? cons
                                                    , ! Token::RCurl(_)
                                                    , {
-        let mut rest = r;
-        rest.insert(0, _1);
-        rest
+        let mut cases = cs;
+        match l {
+            Some(case) => cases.push(case),
+            None => { },
+        }
+        cases 
     });
     pred!(type_keyword<'a>: &'a Token => () = |x| matches!(x, Token::LowerSymbol(_, _)) && x.symbol_name() == "type" => { () });
     seq!(main<'a>: &'a Token => Ast = type_keyword
@@ -279,8 +277,9 @@ mod test {
         => Ast::ConsDef { name, type_params, cons }
 
         => {
-
-            // TODO:  more
+            assert_eq!( name, "Name" );
+            assert_eq!( type_params.len(), 0 );
+            assert_eq!( cons.len(), 3 );
     });
 
     test_first_parse!(should_parse_tuple_case_type: r#"
@@ -293,8 +292,9 @@ mod test {
         => Ast::ConsDef { name, type_params, cons }
 
         => {
-
-            // TODO:  more
+            assert_eq!( name, "Name" );
+            assert_eq!( type_params.len(), 0 );
+            assert_eq!( cons.len(), 3 );
     });
 
     test_first_parse!(should_parse_single_generic_case_type: r#"
@@ -307,8 +307,10 @@ mod test {
         => Ast::ConsDef { name, type_params, cons }
 
         => {
-
-            // TODO:  more
+            assert_eq!( name, "Name" );
+            assert_eq!( type_params.len(), 1 );
+            assert_eq!( type_params[0], "a" );
+            assert_eq!( cons.len(), 3 );
     });
 
     test_first_parse!(should_parse_generic_case_type: r#"
@@ -321,8 +323,12 @@ mod test {
         => Ast::ConsDef { name, type_params, cons }
 
         => {
-
-            // TODO:  more
+            assert_eq!( name, "Name" );
+            assert_eq!( type_params.len(), 3 );
+            assert_eq!( type_params[0], "a" );
+            assert_eq!( type_params[1], "b" );
+            assert_eq!( type_params[2], "c" );
+            assert_eq!( cons.len(), 3 );
     });
 
     test_first_parse!(should_parse_type_trailing_comma: r#"
@@ -335,19 +341,34 @@ mod test {
         => Ast::ConsDef { name, type_params, cons }
 
         => {
-
-            // TODO:  more
+            assert_eq!( name, "Name" );
+            assert_eq!( type_params.len(), 3 );
+            assert_eq!( type_params[0], "a" );
+            assert_eq!( type_params[1], "b" );
+            assert_eq!( type_params[2], "c" );
+            assert_eq!( cons.len(), 3 );
     });
+
+    test_first_parse!(should_parse_single_case_type: r#"
+        type Name { First }"#
+
+        => Ast::ConsDef { name, type_params, cons }
+
+        => {
+            assert_eq!( name, "Name" );
+            assert_eq!( type_params.len(), 0 );
+            assert_eq!( cons.len(), 1 );
+        });  
 
     test_first_parse!(should_parse_empty_type: r#"
         type Name { }"#
 
-    => Ast::ConsDef { name, type_params, cons }
+        => Ast::ConsDef { name, type_params, cons }
 
-    => {
-        // TODO: more
-    });  
-
-    // TODO:  pretty sure trailing comma is a fatal parse.  check and then setup a maybe comma to the list parsers 
+        => {
+            assert_eq!( name, "Name" );
+            assert_eq!( type_params.len(), 0 );
+            assert_eq!( cons.len(), 0 );
+        });  
 }
 
