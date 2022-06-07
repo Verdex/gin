@@ -88,11 +88,6 @@ group!(parse_cons_def<'a>: &'a Token => Ast = |input| {
         };
         Ast::ConsDef{ name: name.symbol_name(), type_params, cons: cs }
     });
-    // TODO:  clean up comment 
-    /*type Blah[<a,+>] {
-        UpperSymbol,
-        UpperSymbol(Type,+),
-    }*/
     main(input)
 });
 
