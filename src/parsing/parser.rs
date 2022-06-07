@@ -284,6 +284,48 @@ mod test {
             // TODO:  more
     });
 
+    test_first_parse!(should_parse_tuple_case: r#"
+        type Name { 
+            First,
+            Second(One, Two, Three),
+            Third(One)
+        }"# 
+        
+        => Ast::ConsDef { name, type_params, cons }
+
+        => {
+
+            // TODO:  more
+    });
+
+    test_first_parse!(should_parse_single_generic_case: r#"
+        type Name<a> { 
+            First,
+            Second(a, Two, Three),
+            Third(One)
+        }"# 
+        
+        => Ast::ConsDef { name, type_params, cons }
+
+        => {
+
+            // TODO:  more
+    });
+
+    test_first_parse!(should_parse_generic_case: r#"
+        type Name<a, b, c> { 
+            First,
+            Second(a, b, c),
+            Third(One)
+        }"# 
+        
+        => Ast::ConsDef { name, type_params, cons }
+
+        => {
+
+            // TODO:  more
+    });
+
     // TODO:  pretty sure trailing comma is a fatal parse.  check and then setup a maybe comma to the list parsers 
 }
 
