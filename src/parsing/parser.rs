@@ -30,6 +30,10 @@ fn internal_parse(tokens : &Vec<Token>) -> Result<Vec<Ast>, MatchError> {
     Ok(ret)
 }
 
+macro_rules! list {
+   () => {}; 
+}
+
 group!(parse_cons_def<'a>: &'a Token => Ast = |input| {
     // TODO pretty sure the list stuff is going to be reused a bunch.  might be able to make a macro for it.
     seq!(comma_type<'a>: &'a Token => Type = Token::Comma(_), t <= ! parse_type, { t });
@@ -279,7 +283,7 @@ mod test {
             // TODO:  more
     });
 
-    test_first_parse!(should_parse_tuple_case: r#"
+    test_first_parse!(should_parse_tuple_case_type: r#"
         type Name { 
             First,
             Second(One, Two, Three),
@@ -293,7 +297,7 @@ mod test {
             // TODO:  more
     });
 
-    test_first_parse!(should_parse_single_generic_case: r#"
+    test_first_parse!(should_parse_single_generic_case_type: r#"
         type Name<a> { 
             First,
             Second(a, Two, Three),
@@ -307,7 +311,7 @@ mod test {
             // TODO:  more
     });
 
-    test_first_parse!(should_parse_generic_case: r#"
+    test_first_parse!(should_parse_generic_case_type: r#"
         type Name<a, b, c> { 
             First,
             Second(a, b, c),
@@ -320,6 +324,29 @@ mod test {
 
             // TODO:  more
     });
+
+    test_first_parse!(should_parse_type_trailing_comma: r#"
+        type Name<a, b, c> { 
+            First,
+            Second(a, b, c),
+            Third(One),
+        }"# 
+        
+        => Ast::ConsDef { name, type_params, cons }
+
+        => {
+
+            // TODO:  more
+    });
+
+    test_first_parse!(should_parse_empty_type: r#"
+        type Name { }"#
+
+    => Ast::ConsDef { name, type_params, cons }
+
+    => {
+        // TODO: more
+    });  
 
     // TODO:  pretty sure trailing comma is a fatal parse.  check and then setup a maybe comma to the list parsers 
 }
