@@ -358,7 +358,7 @@ mod test {
             assert_eq!( name, "Name" );
             assert_eq!( type_params.len(), 0 );
             assert_eq!( cons.len(), 1 );
-        });  
+        });
 
     test_first_parse!(should_parse_empty_type: r#"
         type Name { }"#
