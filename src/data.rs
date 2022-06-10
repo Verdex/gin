@@ -59,24 +59,25 @@ impl Token {
 }
 
 #[derive(Debug)]
-pub struct AMeta { // TODO do we actually need AMeta ? ... it's going to be something like lookup token index and then figure out the start and end from the meta on that
-    pub token_meta : Vec<TMeta>,
+pub enum Type {
+    Concrete(String),
+    Generic(String),
+    Index(String, Box<Type>),
+    Arrow{ src: Box<Type>, dest: Box<Type> },
 }
 
 #[derive(Debug)]
-pub enum Type {
-    Concrete(AMeta, String),
-    Generic(AMeta, String),
-    Index(AMeta, String, Box<Type>),
-    Arrow{ meta: AMeta, src: Box<Type>, dest: Box<Type> },
+pub enum Expr {
+    //Let { name : String }
 }
 
 #[derive(Debug)]
 pub enum ConsCase {
-    Position { meta : AMeta, name : String, params : Vec<Type> },
+    Position { name : String, params : Vec<Type> },
 }
 
 #[derive(Debug)]
 pub enum Ast {
     ConsDef { name : String, type_params : Vec<String>, cons : Vec<ConsCase> },
+    LetDef { name : String, type_params : Vec<String>, t : Type, expr : Expr },
 }

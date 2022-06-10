@@ -3,7 +3,6 @@ use crate::{alt, group, pred, seq, cases};
 use crate::array_pattern::MatchError;
 use crate::data::{ TMeta 
                  , Token
-                 , AMeta
                  , Type
                  , ConsCase
                  , Ast
@@ -64,12 +63,11 @@ group!(parse_cons_def<'a>: &'a Token => Ast = |input| {
         rest
     });
     seq!(cons<'a>: &'a Token => ConsCase = name <= Token::UpperSymbol(_, _), params <= ? type_list, {
-        let meta = AMeta { token_meta : vec![] };
         let params = match params {
             Some(v) => v,
             None => vec![],
         };
-        ConsCase::Position { meta, name: name.symbol_name(), params }
+        ConsCase::Position { name: name.symbol_name(), params }
     });
     seq!(cons_comma<'a>: &'a Token => ConsCase = c <= cons, Token::Comma(_), { c });
     seq!(cons_list<'a>: &'a Token => Vec<ConsCase> = Token::LCurl(_)
@@ -105,13 +103,11 @@ group!(parse_cons_def<'a>: &'a Token => Ast = |input| {
 
 group!(parse_type<'a>: &'a Token => Type = |input| {
     seq!(concrete<'a>: &'a Token => Type = name <= Token::UpperSymbol(_, _), {
-        let ameta = AMeta { token_meta: vec![name.meta()] };
-        Type::Concrete(ameta, name.symbol_name())
+        Type::Concrete(name.symbol_name())
     });
 
     seq!(generic<'a>: &'a Token => Type = name <= Token::LowerSymbol(_, _), {
-        let ameta = AMeta { token_meta: vec![name.meta()] };
-        Type::Generic(ameta, name.symbol_name())
+        Type::Generic(name.symbol_name())
     });
 
     seq!(index<'a>: &'a Token => Type = name <= Token::UpperSymbol(_, _)
@@ -119,8 +115,7 @@ group!(parse_type<'a>: &'a Token => Type = |input| {
                                       , indexer <= ! main
                                       , r <= ! Token::RAngle(_) 
                                       , {
-        let ameta = AMeta { token_meta: vec![name.meta(), l.meta(), r.meta()]};
-        Type::Index(ameta, name.symbol_name(), Box::new(indexer))
+        Type::Index(name.symbol_name(), Box::new(indexer))
     });
 
     seq!(paren<'a>: &'a Token => Type = Token::LParen(_)
@@ -145,8 +140,7 @@ group!(parse_type<'a>: &'a Token => Type = |input| {
                                      , r <= ? rest
                                      , {
         if let Some(r) = r {
-            let ameta = AMeta { token_meta: vec![] };
-            Type::Arrow { meta: ameta, src: Box::new(t), dest: Box::new(r) }
+            Type::Arrow { src: Box::new(t), dest: Box::new(r) }
         }
         else {
             t
@@ -207,21 +201,21 @@ mod test {
         };
     }
 
-    test_type!(should_parse_generic: "a" => Type::Generic(_, n) => { assert_eq!(n, "a"); });
-    test_type!(should_parse_concrete: "A" => Type::Concrete(_, n) => { assert_eq!(n, "A"); });
-    test_type!(should_parse_paren_generic: "(a)" => Type::Generic(_, n) => { assert_eq!(n, "a"); });
-    test_type!(should_parse_paren_concrete: "(A)" => Type::Concrete(_, n) => { assert_eq!(n, "A"); });
-    test_type!(should_parse_index: "Blah<a>" => Type::Index(_, n, g) => {
+    test_type!(should_parse_generic: "a" => Type::Generic(n) => { assert_eq!(n, "a"); });
+    test_type!(should_parse_concrete: "A" => Type::Concrete(n) => { assert_eq!(n, "A"); });
+    test_type!(should_parse_paren_generic: "(a)" => Type::Generic(n) => { assert_eq!(n, "a"); });
+    test_type!(should_parse_paren_concrete: "(A)" => Type::Concrete(n) => { assert_eq!(n, "A"); });
+    test_type!(should_parse_index: "Blah<a>" => Type::Index(n, g) => {
         assert_eq!( n, "Blah" );
-        if let Type::Generic(_, g_n) = *g {
+        if let Type::Generic(g_n) = *g {
             assert_eq!( g_n, "a" );
         }
         else {
             panic!("expected generic as indexer");
         }
     });
-    test_type!(should_parse_simple_arrow: "a -> b" => Type::Arrow { src, dest, .. } => {
-        if let (Type::Generic(_, src), Type::Generic(_, dest)) = (*src, *dest) {
+    test_type!(should_parse_simple_arrow: "a -> b" => Type::Arrow { src, dest } => {
+        if let (Type::Generic(src), Type::Generic(dest)) = (*src, *dest) {
             assert_eq!(src, "a");
             assert_eq!(dest, "b");
         }
@@ -229,15 +223,15 @@ mod test {
             panic!("src and dest should be generic types");
         }
     });
-    test_type!(should_parse_arrow_arrow: "a -> b -> c" => Type::Arrow { src, dest, .. } => {
-        if let Type::Generic(_, src) = *src {
+    test_type!(should_parse_arrow_arrow: "a -> b -> c" => Type::Arrow { src, dest } => {
+        if let Type::Generic(src) = *src {
             assert_eq!(src, "a");
         }
         else {
             panic!("Arrow source incorrect");
         }
         if let Type::Arrow { src, dest, .. } = *dest {
-            if let (Type::Generic(_, dest_src), Type::Generic(_, dest_dest)) = (*src, *dest) {
+            if let (Type::Generic(dest_src), Type::Generic(dest_dest)) = (*src, *dest) {
                 assert_eq!( dest_src, "b");
                 assert_eq!( dest_dest, "c");
             }
@@ -249,9 +243,9 @@ mod test {
             panic!("Dest should be arrow type");
         }
     });
-    test_type!(should_parse_arrow_param: "(a -> b) -> c" => Type::Arrow { src, dest, .. } => {
-        if let Type::Arrow { src, dest, .. } = *src {
-            if let (Type::Generic(_, src_src), Type::Generic(_, src_dest)) = (*src, *dest) {
+    test_type!(should_parse_arrow_param: "(a -> b) -> c" => Type::Arrow { src, dest } => {
+        if let Type::Arrow { src, dest } = *src {
+            if let (Type::Generic(src_src), Type::Generic(src_dest)) = (*src, *dest) {
                 assert_eq!( src_src, "a");
                 assert_eq!( src_dest, "b");
             }
@@ -262,19 +256,19 @@ mod test {
         else {
             panic!("source should be arrow type");
         }
-        if let Type::Generic(_, dest) = *dest {
+        if let Type::Generic(dest) = *dest {
             assert_eq!(dest, "c");
         }
         else {
             panic!("Arrow dest incorrect");
         }
     });
-    test_type!(should_parse_arrow_in_index: "Blah<a -> b>" => Type::Index(_, _, arrow) => { 
+    test_type!(should_parse_arrow_in_index: "Blah<a -> b>" => Type::Index(_, arrow) => { 
         assert!( matches!( *arrow, Type::Arrow{ .. } ) );
     });
-    test_type!(should_parse_index_in_arrow: "Blah<a> -> Blah<b>" => Type::Arrow { src, dest, .. } => {
-        assert!( matches!( *src, Type::Index(_, _, _) ) );
-        assert!( matches!( *dest, Type::Index(_, _, _) ) );
+    test_type!(should_parse_index_in_arrow: "Blah<a> -> Blah<b>" => Type::Arrow { src, dest } => {
+        assert!( matches!( *src, Type::Index(_, _) ) );
+        assert!( matches!( *dest, Type::Index(_, _) ) );
     });
 
     test_first_parse!(should_parse_enum_style_type: r#"
