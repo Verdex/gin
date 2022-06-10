@@ -76,8 +76,8 @@ group!(parse_cons_def<'a>: &'a Token => Ast = |input| {
     });
     pred!(type_keyword<'a>: &'a Token => () = |x| matches!(x, Token::LowerSymbol(_, _)) && x.symbol_name() == "type" => { () });
     seq!(main<'a>: &'a Token => Ast = type_keyword
-                                        , name <= ! Token::UpperSymbol(_, _)
                                         , gs <= ? generic_list
+                                        , name <= ! Token::UpperSymbol(_, _)
                                         , cs <= ? cons_list
                                         , {
         let type_params = match gs {
@@ -298,7 +298,7 @@ mod test {
     });
 
     test_first_parse!(should_parse_single_generic_case_type: r#"
-        type Name<a> { 
+        type<a> Name { 
             First,
             Second(a, Two, Three),
             Third(One)
@@ -314,7 +314,7 @@ mod test {
     });
 
     test_first_parse!(should_parse_generic_case_type: r#"
-        type Name<a, b, c> { 
+        type<a, b, c> Name { 
             First,
             Second(a, b, c),
             Third(One)
@@ -332,7 +332,7 @@ mod test {
     });
 
     test_first_parse!(should_parse_type_trailing_comma: r#"
-        type Name<a, b, c> { 
+        type<a, b, c> Name { 
             First,
             Second(a, b, c),
             Third(One),
