@@ -9,8 +9,18 @@ use crate::data::{ TMeta
                  , Ast
                  };
 
-pub fn parse(tokens : Vec<Token>) -> Result<Vec<Ast>, String> {
-    Err("TODO".into())
+pub fn parse(input : &str, tokens : Vec<Token>) -> Result<Vec<Ast>, String> {
+    match internal_parse(&tokens) {
+        Ok(asts) => Ok(asts),
+        Err(MatchError::ErrorEndOfFile | MatchError::FatalEndOfFile) =>
+            Err("Encountered unexpected end of file while parsing.".into()),
+        Err(MatchError::Error(i) | MatchError::Fatal(i)) => {
+            let TMeta { start, end } = tokens[i].meta();
+            let error_reporter::ErrorReport { line, column, display } = error_reporter::report(input, start, end);
+            let ret = format!("Encountered parsing error at line {line} and column {column}:\n\n{display}");
+            Err(ret)
+        },
+    }
 }
 
 fn internal_parse(tokens : &Vec<Token>) -> Result<Vec<Ast>, MatchError> {
